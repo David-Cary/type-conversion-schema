@@ -19,6 +19,10 @@ export function safeJSONStringify (source: any): string {
   }
 }
 
+export function stringifyValue (source: any): string {
+  return typeof source === 'string' ? source : safeJSONStringify(source)
+}
+
 export class StringifyAction implements TypeConversionAction<unknown, string> {
   transform (
     value: unknown,
@@ -37,12 +41,13 @@ export class JoinTextAction implements TypeConversionAction<unknown, string> {
       const separator = options?.with != null ? String(options.with) : ''
       return value.join(separator)
     }
-    return safeJSONStringify(value)
+    return stringifyValue(value)
   }
 }
 
 export class PadStringAction implements TypeConversionAction<string> {
   getPaddingText (source: any): string {
+    if (source == null) return ' '
     const text = String(source)
     return text.length > 0 ? text : ' '
   }
@@ -53,8 +58,8 @@ export class PadStringAction implements TypeConversionAction<string> {
   ): string {
     const text = this.getPaddingText(options?.text)
     const length = getNumberWithDefault(options?.length, 0)
-    const append = Boolean(options?.append)
-    return append ? value.padEnd(length, text) : value.padStart(length, text)
+    const atStart = Boolean(options?.atStart)
+    return atStart ? value.padStart(length, text) : value.padEnd(length, text)
   }
 
   modifySchema (
@@ -131,13 +136,13 @@ export class InsertStringAction implements TypeConversionAction<string> {
     options?: JSONObject
   ): string {
     if (options != null) {
-      const text = safeJSONStringify(options.text)
-      const position = Number(options.position)
+      const text = stringifyValue(options.text)
+      let position = Number(options.position)
       if (isNaN(position)) {
         return value + text
       }
-      const prefix = value.substring(0, position)
-      const suffix = value.substring(position)
+      const prefix = value.slice(0, position)
+      const suffix = value.slice(position)
       return prefix + text + suffix
     }
     return value
@@ -203,7 +208,7 @@ export class DateStringAction extends StringFormatAction {
   ): string {
     const date = new Date(value)
     if (options?.locales != null) {
-      const locales = String(options.locale)
+      const locales = String(options.locales)
       return date.toLocaleDateString(locales, options)
     }
     return date.toLocaleDateString()
@@ -221,7 +226,7 @@ export class TimeStringAction extends StringFormatAction {
   ): string {
     const date = new Date(value)
     if (options?.locales != null) {
-      const locales = String(options.locale)
+      const locales = String(options.locales)
       return date.toLocaleTimeString(locales, options)
     }
     return date.toLocaleTimeString()
@@ -239,7 +244,7 @@ export class DateTimeStringAction extends StringFormatAction {
   ): string {
     const date = new Date(value)
     if (options?.locales != null) {
-      const locales = String(options.locale)
+      const locales = String(options.locales)
       return date.toLocaleString(locales, options)
     }
     return date.toLocaleString()
