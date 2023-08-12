@@ -21,6 +21,7 @@ export interface TypedActionMap<T> {
     typed: Record<string, TypeConversionAction<T>>;
     untyped: Record<string, TypeConversionAction<any>>;
 }
+export declare function cloneTypedActionMap<T>(source: TypedActionMap<T>): TypedActionMap<T>;
 export declare class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<T> {
     readonly typeName: string;
     readonly convert: (value: unknown) => T;

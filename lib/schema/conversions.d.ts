@@ -18,6 +18,7 @@ export type TypeConversionRequest = (TypeConversionSchema | TypeUnionSchema | st
 export interface TypeConversionAction<F = any, T = F> {
     transform: (value: F, options?: JSONObject, resolver?: TypeConversionResolver) => T;
     modifySchema?: (schema: JSONSchema, options?: JSONObject) => void;
+    replaceSchema?: (schema: JSONSchema, options?: JSONObject) => JSONSchema;
 }
 export interface TypedValueConvertor<T = any> {
     matches: (value: unknown) => boolean;

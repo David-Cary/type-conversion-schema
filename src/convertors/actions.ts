@@ -97,6 +97,15 @@ export interface TypedActionMap<T> {
   untyped: Record<string, TypeConversionAction<any>>
 }
 
+export function cloneTypedActionMap<T>(
+  source: TypedActionMap<T>
+): TypedActionMap<T> {
+  return {
+    typed: { ...source.typed },
+    untyped: { ...source.untyped }
+  }
+}
+
 export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<T> {
   readonly typeName: string
   readonly convert: (value: unknown) => T
@@ -109,10 +118,7 @@ export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<
   ) {
     this.typeName = typeName
     this.convert = convert
-    this.actions = {
-      typed: { ...actions.typed },
-      untyped: { ...actions.untyped }
-    }
+    this.actions = cloneTypedActionMap(actions)
   }
 
   getAction (key: string): TypeConversionAction | undefined {

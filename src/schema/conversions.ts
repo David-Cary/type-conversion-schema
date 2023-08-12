@@ -1,6 +1,4 @@
-import {
-  type JSONSchema
-} from 'json-schema-typed'
+import { type JSONSchema } from 'json-schema-typed'
 
 export type JSONType =
   | string
@@ -43,6 +41,10 @@ export interface TypeConversionAction<F = any, T = F> {
     schema: JSONSchema,
     options?: JSONObject
   ) => void
+  replaceSchema?: (
+    schema: JSONSchema,
+    options?: JSONObject
+  ) => JSONSchema
 }
 
 export interface TypedValueConvertor<T = any> {
