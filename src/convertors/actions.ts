@@ -27,6 +27,22 @@ export class DefaultValueAction implements TypeConversionAction {
   }
 }
 
+export class GetValueAction implements TypeConversionAction {
+  transform (
+    value: any,
+    options?: JSONObject
+  ): any {
+    if (typeof value === 'object' && options?.key != null) {
+      if (Array.isArray(value)) {
+        const index = Number(options.key)
+        return value[index]
+      }
+      const key = String(options.key)
+      return (value as Record<string, any>)[key]
+    }
+  }
+}
+
 export function getConversionSchemaFromJSON (source: JSONObject): TypeConversionSchema {
   return {
     type: String(source.type),
@@ -68,6 +84,12 @@ export class NestedConversionAction implements TypeConversionAction {
     }
     return value
   }
+}
+
+export const DEFAULT_UNTYPED_CONVERSIONS = {
+  convert: new NestedConversionAction(),
+  get: new GetValueAction(),
+  setTo: new ForceValueAction()
 }
 
 export interface TypedActionMap<T> {

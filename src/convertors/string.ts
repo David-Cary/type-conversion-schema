@@ -7,8 +7,7 @@ import {
   TypedActionsValueConvertor,
   type TypedActionMap,
   DefaultValueAction,
-  ForceValueAction,
-  NestedConversionAction
+  DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
 import { type JSONSchema } from 'json-schema-typed'
 
@@ -256,16 +255,17 @@ export class DateTimeStringAction extends StringFormatAction {
 }
 
 export const DEFAULT_STRING_ACTIONS: TypedActionMap<string> = {
-  untyped: {
-    convert: new NestedConversionAction(),
-    date: new DateStringAction(),
-    dateTime: new DateTimeStringAction(),
-    default: new DefaultValueAction(),
-    join: new JoinTextAction(),
-    setTo: new ForceValueAction(),
-    stringify: new StringifyAction(),
-    time: new TimeStringAction()
-  },
+  untyped: Object.assign(
+    {
+      date: new DateStringAction(),
+      dateTime: new DateTimeStringAction(),
+      default: new DefaultValueAction(),
+      join: new JoinTextAction(),
+      stringify: new StringifyAction(),
+      time: new TimeStringAction()
+    },
+    DEFAULT_UNTYPED_CONVERSIONS
+  ),
   typed: {
     insert: new InsertStringAction(),
     lowerCase: new LowerCaseStringAction(),

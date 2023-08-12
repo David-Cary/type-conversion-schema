@@ -6,8 +6,7 @@ import {
   TypedActionsValueConvertor,
   type TypedActionMap,
   DefaultValueAction,
-  ForceValueAction,
-  NestedConversionAction
+  DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
 
 export class ParseToBooleanAction implements TypeConversionAction<any, boolean> {
@@ -30,12 +29,13 @@ export class NegateBooleanAction implements TypeConversionAction<boolean> {
 }
 
 export const DEFAULT_BOOLEAN_ACTIONS: TypedActionMap<boolean> = {
-  untyped: {
-    convert: new NestedConversionAction(),
-    default: new DefaultValueAction(),
-    parse: new ParseToBooleanAction(),
-    setTo: new ForceValueAction()
-  },
+  untyped: Object.assign(
+    {
+      default: new DefaultValueAction(),
+      parse: new ParseToBooleanAction()
+    },
+    DEFAULT_UNTYPED_CONVERSIONS
+  ),
   typed: {
     negate: new NegateBooleanAction()
   }

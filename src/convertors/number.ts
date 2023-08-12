@@ -5,7 +5,7 @@ import {
 import {
   TypedActionsValueConvertor,
   type TypedActionMap,
-  ForceValueAction
+  DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
 import { type JSONSchema } from 'json-schema-typed'
 
@@ -165,9 +165,7 @@ export class NegativeNumberAction implements TypeConversionAction<number> {
 }
 
 export const DEFAULT_NUMBER_ACTIONS: TypedActionMap<number> = {
-  untyped: {
-    setTo: new ForceValueAction()
-  },
+  untyped: { ...DEFAULT_UNTYPED_CONVERSIONS },
   typed: {
     default: new DefaultNumberAction(),
     max: new MaximumNumberAction(),

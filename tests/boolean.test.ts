@@ -35,6 +35,20 @@ describe("ToBooleanConvertor", () => {
       expect(value).toBe(true)
     })
   })
+  describe("get action", () => {
+    test("should extract the target value", () => {
+      const value = convertor.convertWith(
+        { value: 1 },
+        [
+          {
+            type: 'get',
+            key: 'value'
+          }
+        ]
+      )
+      expect(value).toBe(true)
+    })
+  })
   describe("negate action", () => {
     test("should negate the provided value", () => {
       const value = convertor.convertWith(false, ['negate'])

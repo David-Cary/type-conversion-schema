@@ -5,10 +5,18 @@ export declare class ForceValueAction implements TypeConversionAction {
 export declare class DefaultValueAction implements TypeConversionAction {
     transform(value: any, options?: JSONObject): any;
 }
+export declare class GetValueAction implements TypeConversionAction {
+    transform(value: any, options?: JSONObject): any;
+}
 export declare function getConversionSchemaFromJSON(source: JSONObject): TypeConversionSchema;
 export declare class NestedConversionAction implements TypeConversionAction {
     transform(value: any, options?: JSONObject, resolver?: TypeConversionResolver): any;
 }
+export declare const DEFAULT_UNTYPED_CONVERSIONS: {
+    convert: NestedConversionAction;
+    get: GetValueAction;
+    setTo: ForceValueAction;
+};
 export interface TypedActionMap<T> {
     typed: Record<string, TypeConversionAction<T>>;
     untyped: Record<string, TypeConversionAction<any>>;
@@ -20,6 +28,6 @@ export declare class TypedActionsValueConvertor<T = any> implements TypedValueCo
     constructor(typeName: string, convert: (value: unknown) => T, actions: TypedActionMap<T>);
     getAction(key: string): TypeConversionAction | undefined;
     matches(value: unknown): boolean;
-    convertWith(value: unknown, actions: TypedActionRequest[]): T;
+    convertWith(value: unknown, actions: TypedActionRequest[], resolver?: TypeConversionResolver): T;
     expandActionRequest(source: TypedActionRequest): TypeMarkedObject;
 }
