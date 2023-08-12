@@ -1,4 +1,8 @@
-import { ToBooleanConvertor } from "../src/index"
+import {
+  ToBooleanConvertor,
+  TypeConversionResolver,
+  DEFAULT_TYPE_CONVERTORS
+} from "../src/index"
 
 const convertor = new ToBooleanConvertor()
 
@@ -35,6 +39,39 @@ describe("ToBooleanConvertor", () => {
     test("should negate the provided value", () => {
       const value = convertor.convertWith(false, ['negate'])
       expect(value).toBe(true)
+    })
+  })
+  describe("parse action", () => {
+    test("should treat 'false' text as false", () => {
+      const value = convertor.convertWith('false', ['parse'])
+      expect(value).toBe(false)
+    })
+    test("should apply the provided false value", () => {
+      const value = convertor.convertWith(
+        'no',
+        [
+          {
+            type: 'parse',
+            false: 'no'
+          }
+        ]
+      )
+      expect(value).toBe(false)
+    })
+  })
+  describe("convert action", () => {
+    test("should apply nested conversion", () => {
+      const value = convertor.convertWith(
+        '0',
+        [
+          {
+            type: 'convert',
+            to: 'number'
+          }
+        ],
+        new TypeConversionResolver(DEFAULT_TYPE_CONVERTORS)
+      )
+      expect(value).toBe(false)
     })
   })
 })

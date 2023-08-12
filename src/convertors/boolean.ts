@@ -6,21 +6,34 @@ import {
   TypedActionsValueConvertor,
   type TypedActionMap,
   DefaultValueAction,
-  ForceValueAction
+  ForceValueAction,
+  NestedConversionAction
 } from './actions'
 
-export class NegateBooleanAction implements TypeConversionAction<boolean> {
+export class ParseToBooleanAction implements TypeConversionAction<any, boolean> {
   transform (
-    value: boolean,
+    value: any,
     options?: JSONObject
-  ): any {
+  ): boolean {
+    const falseValues = options?.false != null
+      ? (Array.isArray(options.false) ? options.false : [options.false])
+      : ['false']
+    if (falseValues.includes(value)) return false
+    return Boolean(value)
+  }
+}
+
+export class NegateBooleanAction implements TypeConversionAction<boolean> {
+  transform (value: boolean): any {
     return !value
   }
 }
 
 export const DEFAULT_BOOLEAN_ACTIONS: TypedActionMap<boolean> = {
   untyped: {
+    convert: new NestedConversionAction(),
     default: new DefaultValueAction(),
+    parse: new ParseToBooleanAction(),
     setTo: new ForceValueAction()
   },
   typed: {

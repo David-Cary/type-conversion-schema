@@ -3,6 +3,8 @@ import {
   type TypedActionRequest,
   type TypeMarkedObject,
   type TypedValueConvertor,
+  type TypeConversionResolver,
+  type TypeConversionSchema,
   type JSONObject
 } from '../schema/conversions'
 import { cloneJSON } from './literal'
@@ -22,6 +24,49 @@ export class DefaultValueAction implements TypeConversionAction {
     options?: JSONObject
   ): any {
     return value === undefined ? cloneJSON(options?.value) : value
+  }
+}
+
+export function getConversionSchemaFromJSON (source: JSONObject): TypeConversionSchema {
+  return {
+    type: String(source.type),
+    actions: Array.isArray(source.actions)
+      ? source.actions.filter(item => {
+        switch (typeof item) {
+          case 'string': {
+            return true
+          }
+          case 'object': {
+            return !Array.isArray(item) && typeof item?.type === 'string'
+          }
+        }
+        return false
+      }) as TypedActionRequest[]
+      : []
+  }
+}
+
+export class NestedConversionAction implements TypeConversionAction {
+  transform (
+    value: any,
+    options?: JSONObject,
+    resolver?: TypeConversionResolver
+  ): any {
+    if (resolver != null && options != null) {
+      switch (typeof options.to) {
+        case 'string': {
+          return resolver.convert(value, options.to)
+        }
+        case 'object': {
+          if (options.to != null && !Array.isArray(options.to)) {
+            const schema = getConversionSchemaFromJSON(options.to)
+            return resolver.convert(value, schema)
+          }
+          break
+        }
+      }
+    }
+    return value
   }
 }
 
@@ -61,7 +106,8 @@ export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<
 
   convertWith (
     value: unknown,
-    actions: TypedActionRequest[]
+    actions: TypedActionRequest[],
+    resolver?: TypeConversionResolver
   ): T {
     let untypedResult = value
     const skippedRequests: TypeMarkedObject[] = []
@@ -69,7 +115,11 @@ export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<
       const expandedRequest = this.expandActionRequest(request)
       const action = this.actions.untyped[expandedRequest.type]
       if (action != null) {
-        untypedResult = action.transform(untypedResult, expandedRequest)
+        untypedResult = action.transform(
+          untypedResult,
+          expandedRequest,
+          resolver
+        )
       } else {
         skippedRequests.push(expandedRequest)
       }
@@ -78,7 +128,11 @@ export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<
     for (const request of skippedRequests) {
       const action = this.actions.typed[request.type]
       if (action != null) {
-        typedResult = action.transform(typedResult, request)
+        typedResult = action.transform(
+          typedResult,
+          request,
+          resolver
+        )
       }
     }
     return typedResult

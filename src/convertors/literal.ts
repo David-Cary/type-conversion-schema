@@ -1,6 +1,5 @@
 import {
   type TypedValueConvertor,
-  type TypedActionRequest,
   type TypeConversionAction
 } from '../schema/conversions'
 
@@ -38,10 +37,7 @@ export class ToLiteralConvertor<T> implements TypedValueConvertor<T> {
     return cloneJSON(this.value)
   }
 
-  convertWith (
-    value: unknown,
-    actions: TypedActionRequest[]
-  ): T {
+  convertWith (value: unknown): T {
     return cloneJSON(this.value)
   }
 }

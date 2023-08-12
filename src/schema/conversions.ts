@@ -36,7 +36,8 @@ export type TypeConversionRequest = (
 export interface TypeConversionAction<F = any, T = F> {
   transform: (
     value: F,
-    options?: JSONObject
+    options?: JSONObject,
+    resolver?: TypeConversionResolver
   ) => T
   modifySchema?: (
     schema: JSONSchema,
@@ -49,7 +50,8 @@ export interface TypedValueConvertor<T = any> {
   convert: (value: unknown) => T
   convertWith: (
     value: unknown,
-    actions: TypedActionRequest[]
+    actions: TypedActionRequest[],
+    resolver?: TypeConversionResolver
   ) => T
   getAction: (key: string) => TypeConversionAction | undefined
 }
@@ -101,7 +103,7 @@ export class TypeConversionResolver {
     if (schema != null) {
       const convertor = this.convertors[schema.type]
       if (convertor != null) {
-        return convertor.convertWith(value, schema.actions)
+        return convertor.convertWith(value, schema.actions, this)
       }
     }
   }

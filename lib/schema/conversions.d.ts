@@ -16,15 +16,16 @@ export interface TypeUnionSchema {
 }
 export type TypeConversionRequest = (TypeConversionSchema | TypeUnionSchema | string);
 export interface TypeConversionAction<F = any, T = F> {
-    transform: (value: F, options?: JSONObject) => T;
+    transform: (value: F, options?: JSONObject, resolver?: TypeConversionResolver) => T;
     modifySchema?: (schema: JSONSchema, options?: JSONObject) => void;
 }
 export interface TypedValueConvertor<T = any> {
     matches: (value: unknown) => boolean;
     convert: (value: unknown) => T;
-    convertWith: (value: unknown, actions: TypedActionRequest[]) => T;
+    convertWith: (value: unknown, actions: TypedActionRequest[], resolver?: TypeConversionResolver) => T;
     getAction: (key: string) => TypeConversionAction | undefined;
 }
+export declare const JSON_SCHEMA_TYPE_NAMES: string[];
 export declare class TypeConversionResolver {
     readonly convertors: Record<string, TypedValueConvertor>;
     constructor(convertors?: Record<string, TypedValueConvertor>);

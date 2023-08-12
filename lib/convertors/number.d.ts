@@ -5,14 +5,14 @@ export declare class DefaultNumberAction implements TypeConversionAction<number>
     transform(value: number, options?: JSONObject): number;
 }
 export declare class RoundNumberAction implements TypeConversionAction<number> {
-    transform(value: number, options?: JSONObject): number;
+    transform(value: number): number;
     modifySchema(schema: JSONSchema, options?: JSONObject): void;
 }
 export declare class RoundUpNumberAction extends RoundNumberAction {
-    transform(value: number, options?: JSONObject): number;
+    transform(value: number): number;
 }
 export declare class RoundDownNumberAction extends RoundNumberAction {
-    transform(value: number, options?: JSONObject): number;
+    transform(value: number): number;
 }
 export declare function getNumberWithDefault(source: any, defaultValue?: number): number;
 export declare class NumberToMultipleOfAction implements TypeConversionAction<number> {
@@ -28,11 +28,11 @@ export declare class MaximumNumberAction implements TypeConversionAction<number>
     modifySchema(schema: JSONSchema, options?: JSONObject): void;
 }
 export declare class PositiveNumberAction implements TypeConversionAction<number> {
-    transform(value: number, options?: JSONObject): number;
+    transform(value: number): number;
     modifySchema(schema: JSONSchema, options?: JSONObject): void;
 }
 export declare class NegativeNumberAction implements TypeConversionAction<number> {
-    transform(value: number, options?: JSONObject): number;
+    transform(value: number): number;
     modifySchema(schema: JSONSchema, options?: JSONObject): void;
 }
 export declare const DEFAULT_NUMBER_ACTIONS: TypedActionMap<number>;

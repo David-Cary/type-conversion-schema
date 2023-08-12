@@ -1,9 +1,13 @@
-import { type TypeConversionAction, type TypedActionRequest, type TypeMarkedObject, type TypedValueConvertor, type JSONObject } from '../schema/conversions';
+import { type TypeConversionAction, type TypedActionRequest, type TypeMarkedObject, type TypedValueConvertor, type TypeConversionResolver, type TypeConversionSchema, type JSONObject } from '../schema/conversions';
 export declare class ForceValueAction implements TypeConversionAction {
     transform(value: any, options?: JSONObject): any;
 }
 export declare class DefaultValueAction implements TypeConversionAction {
     transform(value: any, options?: JSONObject): any;
+}
+export declare function getConversionSchemaFromJSON(source: JSONObject): TypeConversionSchema;
+export declare class NestedConversionAction implements TypeConversionAction {
+    transform(value: any, options?: JSONObject, resolver?: TypeConversionResolver): any;
 }
 export interface TypedActionMap<T> {
     typed: Record<string, TypeConversionAction<T>>;

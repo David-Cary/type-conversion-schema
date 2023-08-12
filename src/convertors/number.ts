@@ -19,10 +19,7 @@ export class DefaultNumberAction implements TypeConversionAction<number> {
 }
 
 export class RoundNumberAction implements TypeConversionAction<number> {
-  transform (
-    value: number,
-    options?: JSONObject
-  ): number {
+  transform (value: number): number {
     return Math.round(value)
   }
 
@@ -37,19 +34,13 @@ export class RoundNumberAction implements TypeConversionAction<number> {
 }
 
 export class RoundUpNumberAction extends RoundNumberAction {
-  transform (
-    value: number,
-    options?: JSONObject
-  ): number {
+  transform (value: number): number {
     return Math.ceil(value)
   }
 }
 
 export class RoundDownNumberAction extends RoundNumberAction {
-  transform (
-    value: number,
-    options?: JSONObject
-  ): number {
+  transform (value: number): number {
     return Math.floor(value)
   }
 }
@@ -140,10 +131,7 @@ export class MaximumNumberAction implements TypeConversionAction<number> {
 }
 
 export class PositiveNumberAction implements TypeConversionAction<number> {
-  transform (
-    value: number,
-    options?: JSONObject
-  ): number {
+  transform (value: number): number {
     return value < 0 ? -value : value
   }
 
@@ -160,10 +148,7 @@ export class PositiveNumberAction implements TypeConversionAction<number> {
 }
 
 export class NegativeNumberAction implements TypeConversionAction<number> {
-  transform (
-    value: number,
-    options?: JSONObject
-  ): number {
+  transform (value: number): number {
     return value > 0 ? -value : value
   }
 

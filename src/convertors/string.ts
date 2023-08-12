@@ -7,13 +7,23 @@ import {
   TypedActionsValueConvertor,
   type TypedActionMap,
   DefaultValueAction,
-  ForceValueAction
+  ForceValueAction,
+  NestedConversionAction
 } from './actions'
 import { type JSONSchema } from 'json-schema-typed'
 
-export function safeJSONStringify (source: any): string {
+export type StringifyReplacerCallback = (this: any, key: string, value: any) => any
+
+export function safeJSONStringify (
+  source: any,
+  replacer?: StringifyReplacerCallback | Array<string | number> | null,
+  space?: number | string
+): string {
   try {
-    return JSON.stringify(source)
+    if (typeof replacer === 'function') {
+      return JSON.stringify(source, replacer, space)
+    }
+    return JSON.stringify(source, replacer, space)
   } catch (error) {
     return String(source)
   }
@@ -24,10 +34,7 @@ export function stringifyValue (source: any): string {
 }
 
 export class StringifyAction implements TypeConversionAction<unknown, string> {
-  transform (
-    value: unknown,
-    options?: JSONObject
-  ): string {
+  transform (value: unknown): string {
     return safeJSONStringify(value)
   }
 }
@@ -137,7 +144,7 @@ export class InsertStringAction implements TypeConversionAction<string> {
   ): string {
     if (options != null) {
       const text = stringifyValue(options.text)
-      let position = Number(options.position)
+      const position = Number(options.position)
       if (isNaN(position)) {
         return value + text
       }
@@ -180,10 +187,7 @@ export class StringFormatAction implements TypeConversionAction<string> {
     this.formatName = formatName
   }
 
-  transform (
-    value: string,
-    options?: JSONObject
-  ): string {
+  transform (value: string): string {
     return value
   }
 
@@ -253,6 +257,7 @@ export class DateTimeStringAction extends StringFormatAction {
 
 export const DEFAULT_STRING_ACTIONS: TypedActionMap<string> = {
   untyped: {
+    convert: new NestedConversionAction(),
     date: new DateStringAction(),
     dateTime: new DateTimeStringAction(),
     default: new DefaultValueAction(),
