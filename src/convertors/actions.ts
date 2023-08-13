@@ -4,10 +4,12 @@ import {
   type TypeMarkedObject,
   type TypedValueConvertor,
   type TypeConversionResolver,
-  type TypeConversionSchema,
-  type JSONObject
+  type TypeConversionSchema
 } from '../schema/conversions'
-import { cloneJSON } from './literal'
+import {
+  type JSONObject,
+  cloneJSON
+} from '../schema/JSON'
 
 export class ForceValueAction implements TypeConversionAction {
   transform (
@@ -97,7 +99,7 @@ export interface TypedActionMap<T> {
   untyped: Record<string, TypeConversionAction<any>>
 }
 
-export function cloneTypedActionMap<T>(
+export function cloneTypedActionMap<T> (
   source: TypedActionMap<T>
 ): TypedActionMap<T> {
   return {

@@ -1,14 +1,5 @@
 import { type JSONSchema } from 'json-schema-typed'
-
-export type JSONType =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: JSONType }
-  | JSONType[]
-
-export type JSONObject = Record<string, JSONType>
+import { type JSONObject } from './JSON'
 
 export interface TypeMarkedObject extends JSONObject {
   type: string

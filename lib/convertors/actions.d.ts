@@ -1,4 +1,5 @@
-import { type TypeConversionAction, type TypedActionRequest, type TypeMarkedObject, type TypedValueConvertor, type TypeConversionResolver, type TypeConversionSchema, type JSONObject } from '../schema/conversions';
+import { type TypeConversionAction, type TypedActionRequest, type TypeMarkedObject, type TypedValueConvertor, type TypeConversionResolver, type TypeConversionSchema } from '../schema/conversions';
+import { type JSONObject } from '../schema/JSON';
 export declare class ForceValueAction implements TypeConversionAction {
     transform(value: any, options?: JSONObject): any;
 }

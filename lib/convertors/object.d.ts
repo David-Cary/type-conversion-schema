@@ -1,4 +1,5 @@
-import { type TypeConversionAction, type JSONObject } from '../schema/conversions';
+import { type TypeConversionAction } from '../schema/conversions';
+import { type JSONObject } from '../schema/JSON';
 import { TypedActionsValueConvertor, type TypedActionMap } from './actions';
 import { type JSONSchema } from 'json-schema-typed';
 export type POJObject = Record<string, unknown>;

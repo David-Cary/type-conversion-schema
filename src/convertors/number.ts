@@ -1,7 +1,5 @@
-import {
-  type TypeConversionAction,
-  type JSONObject
-} from '../schema/conversions'
+import { type TypeConversionAction } from '../schema/conversions'
+import { type JSONObject } from '../schema/JSON'
 import {
   TypedActionsValueConvertor,
   type TypedActionMap,

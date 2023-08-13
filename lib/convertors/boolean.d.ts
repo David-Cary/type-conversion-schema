@@ -1,4 +1,5 @@
-import { type TypeConversionAction, type JSONObject } from '../schema/conversions';
+import { type TypeConversionAction } from '../schema/conversions';
+import { type JSONObject } from '../schema/JSON';
 import { TypedActionsValueConvertor, type TypedActionMap } from './actions';
 export declare class ParseToBooleanAction implements TypeConversionAction<any, boolean> {
     transform(value: any, options?: JSONObject): boolean;

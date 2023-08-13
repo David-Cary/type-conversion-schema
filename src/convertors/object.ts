@@ -1,7 +1,5 @@
-import {
-  type TypeConversionAction,
-  type JSONObject
-} from '../schema/conversions'
+import { type TypeConversionAction } from '../schema/conversions'
+import { type JSONObject } from '../schema/JSON'
 import {
   TypedActionsValueConvertor,
   type TypedActionMap,
@@ -12,17 +10,17 @@ import { type JSONSchema } from 'json-schema-typed'
 
 export type POJObject = Record<string, unknown>
 
-export function getObjectFrom(source:unknown): POJObject {
-  switch(typeof source) {
+export function getObjectFrom (source: unknown): POJObject {
+  switch (typeof source) {
     case 'object': {
-      if(Array.isArray(source)) {
+      if (Array.isArray(source)) {
         const map: POJObject = {}
-        for(let i = 0; i < source.length; i++) {
+        for (let i = 0; i < source.length; i++) {
           map[String(i)] = source[i]
         }
         return map
       }
-      if(source != null) return source as POJObject
+      if (source != null) return source as POJObject
       break
     }
     case 'string': {
@@ -41,7 +39,7 @@ export class WrapInObjectAction implements TypeConversionAction<any, POJObject> 
     value: any,
     options?: JSONObject
   ): POJObject {
-    if(typeof options?.key === 'string' && options.key.length > 0) {
+    if (typeof options?.key === 'string' && options.key.length > 0) {
       const wrapper: POJObject = {}
       wrapper[options.key] = value
       return wrapper
@@ -54,7 +52,7 @@ export class WrapInObjectAction implements TypeConversionAction<any, POJObject> 
     options?: JSONObject
   ): JSONSchema {
     const properties: Record<string, JSONSchema> = {}
-    if(typeof options?.key === 'string' && options.key.length > 0) {
+    if (typeof options?.key === 'string' && options.key.length > 0) {
       properties[options.key] = schema
     }
     return {
@@ -69,7 +67,7 @@ export class CloneViaSpreadAction implements TypeConversionAction<POJObject> {
     value: POJObject,
     options?: JSONObject
   ): POJObject {
-    return {...value}
+    return { ...value }
   }
 }
 
@@ -78,7 +76,7 @@ export class AssignObjectValuesAction implements TypeConversionAction<POJObject>
     value: POJObject,
     options?: JSONObject
   ): POJObject {
-    if(typeof options?.values === 'object' && options.values != null) {
+    if (typeof options?.values === 'object' && options.values != null) {
       Object.assign(value, options.value)
     }
     return value
@@ -90,10 +88,10 @@ export class AssignObjectDefaultsAction implements TypeConversionAction<POJObjec
     value: POJObject,
     options?: JSONObject
   ): POJObject {
-    if(typeof options?.values === 'object' && options.values != null) {
+    if (typeof options?.values === 'object' && options.values != null) {
       const map = options.values as POJObject
-      for(const key in map) {
-        if(value[key] === undefined) {
+      for (const key in map) {
+        if (value[key] === undefined) {
           value[key] = map[key]
         }
       }
@@ -110,9 +108,10 @@ export class DeleteObjectValuesAction implements TypeConversionAction<POJObject>
     const keys = options != null && Array.isArray(options.keys)
       ? options.keys
       : []
-    for(const key of keys) {
+    for (const key of keys) {
       const stringKey = String(key)
-      if(stringKey in value) {
+      if (stringKey in value) {
+        /* eslint-disable @typescript-eslint/no-dynamic-delete */
         delete value[stringKey]
       }
     }
