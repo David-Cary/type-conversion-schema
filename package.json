@@ -10,6 +10,10 @@
     "lint": "eslint --ext .ts src",
     "lint-fix": "eslint --fix --ext .ts src",
     "test": "jest tests",
+    "test-literal": "jest tests/literal.test.ts",
+    "test-bool": "jest tests/boolean.test.ts",
+    "test-number": "jest tests/number.test.ts",
+    "test-string": "jest tests/string.test.ts",
     "build": "tsc"
   },
   "keywords": [

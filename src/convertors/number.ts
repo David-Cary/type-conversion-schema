@@ -5,7 +5,7 @@ import {
   type TypedActionMap,
   DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
-import { type JSONSchema } from 'json-schema-typed'
+import { type BasicJSTypeSchema } from '../schema/JSType'
 
 export class DefaultNumberAction implements TypeConversionAction<number> {
   transform (
@@ -22,12 +22,13 @@ export class RoundNumberAction implements TypeConversionAction<number> {
   }
 
   modifySchema (
-    schema: JSONSchema,
+    schema: BasicJSTypeSchema,
     options?: JSONObject
-  ): void {
-    if (typeof schema === 'object') {
-      schema.type = 'integer'
+  ): BasicJSTypeSchema {
+    if (schema.type === 'number') {
+      schema.integer = true
     }
+    return schema
   }
 }
 
@@ -62,13 +63,14 @@ export class NumberToMultipleOfAction implements TypeConversionAction<number> {
   }
 
   modifySchema (
-    schema: JSONSchema,
+    schema: BasicJSTypeSchema,
     options?: JSONObject
-  ): void {
-    if (typeof schema === 'object') {
+  ): BasicJSTypeSchema {
+    if (schema.type === 'number') {
       schema.multipleOf = getNumberWithDefault(options?.value, 1)
-      schema.type = schema.multipleOf % 1 === 0 ? 'integer' : 'number'
+      schema.integer = schema.multipleOf % 1 === 0
     }
+    return schema
   }
 }
 
@@ -87,16 +89,17 @@ export class MinimumNumberAction implements TypeConversionAction<number> {
   }
 
   modifySchema (
-    schema: JSONSchema,
+    schema: BasicJSTypeSchema,
     options?: JSONObject
-  ): void {
-    if (options != null && typeof schema === 'object') {
+  ): BasicJSTypeSchema {
+    if (schema.type === 'number' && options != null) {
       const minimum = Number(options.value)
       if (!isNaN(minimum)) {
         schema.minimum = minimum
-        if (minimum % 1 !== 0) schema.type = 'number'
+        if (minimum % 1 !== 0) schema.integer = false
       }
     }
+    return schema
   }
 }
 
@@ -115,16 +118,17 @@ export class MaximumNumberAction implements TypeConversionAction<number> {
   }
 
   modifySchema (
-    schema: JSONSchema,
+    schema: BasicJSTypeSchema,
     options?: JSONObject
-  ): void {
-    if (options != null && typeof schema === 'object') {
+  ): BasicJSTypeSchema {
+    if (schema.type === 'number' && options != null) {
       const maximum = Number(options.value)
       if (!isNaN(maximum)) {
         schema.maximum = maximum
-        if (maximum % 1 !== 0) schema.type = 'number'
+        if (maximum % 1 !== 0) schema.integer = false
       }
     }
+    return schema
   }
 }
 
@@ -134,14 +138,15 @@ export class PositiveNumberAction implements TypeConversionAction<number> {
   }
 
   modifySchema (
-    schema: JSONSchema,
+    schema: BasicJSTypeSchema,
     options?: JSONObject
-  ): void {
-    if (typeof schema === 'object') {
+  ): BasicJSTypeSchema {
+    if (schema.type === 'number') {
       if (schema.minimum === undefined || schema.minimum < 0) {
         schema.minimum = 0
       }
     }
+    return schema
   }
 }
 
@@ -151,19 +156,21 @@ export class NegativeNumberAction implements TypeConversionAction<number> {
   }
 
   modifySchema (
-    schema: JSONSchema,
+    schema: BasicJSTypeSchema,
     options?: JSONObject
-  ): void {
-    if (typeof schema === 'object') {
+  ): BasicJSTypeSchema {
+    if (schema.type === 'number') {
       if (schema.maximum === undefined || schema.maximum > 0) {
         schema.maximum = 0
       }
     }
+    return schema
   }
 }
 
 export const DEFAULT_NUMBER_ACTIONS: TypedActionMap<number> = {
   untyped: { ...DEFAULT_UNTYPED_CONVERSIONS },
+  conversion: {},
   typed: {
     default: new DefaultNumberAction(),
     max: new MaximumNumberAction(),

@@ -3,10 +3,9 @@ import { type JSONObject } from '../schema/JSON'
 import {
   TypedActionsValueConvertor,
   type TypedActionMap,
-  DefaultValueAction,
   DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
-import { type JSONSchema } from 'json-schema-typed'
+import { type BasicJSTypeSchema } from '../schema/JSType'
 
 export type POJObject = Record<string, unknown>
 
@@ -47,11 +46,15 @@ export class WrapInObjectAction implements TypeConversionAction<any, POJObject> 
     return getObjectFrom(value)
   }
 
-  replaceSchema (
-    schema: JSONSchema,
+  createSchema (): BasicJSTypeSchema {
+    return { type: 'object' }
+  }
+
+  modifySchema (
+    schema: BasicJSTypeSchema,
     options?: JSONObject
-  ): JSONSchema {
-    const properties: Record<string, JSONSchema> = {}
+  ): BasicJSTypeSchema {
+    const properties: Record<string, BasicJSTypeSchema> = {}
     if (typeof options?.key === 'string' && options.key.length > 0) {
       properties[options.key] = schema
     }
@@ -120,13 +123,10 @@ export class DeleteObjectValuesAction implements TypeConversionAction<POJObject>
 }
 
 export const DEFAULT_OBJECT_ACTIONS: TypedActionMap<POJObject> = {
-  untyped: Object.assign(
-    {
-      default: new DefaultValueAction(),
-      wrap: new WrapInObjectAction()
-    },
-    DEFAULT_UNTYPED_CONVERSIONS
-  ),
+  untyped: { ...DEFAULT_UNTYPED_CONVERSIONS },
+  conversion: {
+    wrap: new WrapInObjectAction()
+  },
   typed: {
     assign: new AssignObjectValuesAction(),
     clone: new CloneViaSpreadAction(),

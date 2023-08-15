@@ -4,10 +4,9 @@ import { getNumberWithDefault } from './number'
 import {
   TypedActionsValueConvertor,
   type TypedActionMap,
-  DefaultValueAction,
   DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
-import { type JSONSchema } from 'json-schema-typed'
+import { type BasicJSTypeSchema } from '../schema/JSType'
 
 export type StringifyReplacerCallback = (this: any, key: string, value: any) => any
 
@@ -67,15 +66,16 @@ export class PadStringAction implements TypeConversionAction<string> {
   }
 
   modifySchema (
-    schema: JSONSchema,
+    schema: BasicJSTypeSchema,
     options?: JSONObject
-  ): void {
-    if (typeof schema === 'object') {
-      const length = getNumberWithDefault(options?.length, 0)
+  ): BasicJSTypeSchema {
+    const length = getNumberWithDefault(options?.length, 0)
+    if (schema.type === 'string') {
       if (schema.minLength === undefined || schema.minLength < length) {
         schema.minLength = length
       }
     }
+    return schema
   }
 }
 
@@ -90,10 +90,10 @@ export class StringSliceAction implements TypeConversionAction<string> {
   }
 
   modifySchema (
-    schema: JSONSchema,
+    schema: BasicJSTypeSchema,
     options?: JSONObject
-  ): void {
-    if (typeof schema === 'object') {
+  ): BasicJSTypeSchema {
+    if (schema.type === 'string') {
       const end = Number(options?.end)
       if (!isNaN(end)) {
         const start = getNumberWithDefault(options?.start, 0)
@@ -105,6 +105,7 @@ export class StringSliceAction implements TypeConversionAction<string> {
         }
       }
     }
+    return schema
   }
 }
 
@@ -189,12 +190,13 @@ export class StringFormatAction implements TypeConversionAction<string> {
   }
 
   modifySchema (
-    schema: JSONSchema,
+    schema: BasicJSTypeSchema,
     options?: JSONObject
-  ): void {
-    if (typeof schema === 'object') {
+  ): BasicJSTypeSchema {
+    if (schema.type === 'string') {
       schema.format = this.formatName
     }
+    return schema
   }
 }
 
@@ -253,17 +255,14 @@ export class DateTimeStringAction extends StringFormatAction {
 }
 
 export const DEFAULT_STRING_ACTIONS: TypedActionMap<string> = {
-  untyped: Object.assign(
-    {
-      date: new DateStringAction(),
-      dateTime: new DateTimeStringAction(),
-      default: new DefaultValueAction(),
-      join: new JoinTextAction(),
-      stringify: new StringifyAction(),
-      time: new TimeStringAction()
-    },
-    DEFAULT_UNTYPED_CONVERSIONS
-  ),
+  untyped: { ...DEFAULT_UNTYPED_CONVERSIONS },
+  conversion: {
+    date: new DateStringAction(),
+    dateTime: new DateTimeStringAction(),
+    join: new JoinTextAction(),
+    stringify: new StringifyAction(),
+    time: new TimeStringAction()
+  },
   typed: {
     insert: new InsertStringAction(),
     lowerCase: new LowerCaseStringAction(),

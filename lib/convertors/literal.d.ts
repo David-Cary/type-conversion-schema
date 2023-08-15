@@ -1,9 +1,10 @@
-import { type TypedValueConvertor, type TypeConversionAction } from '../schema/conversions';
+import { type TypedValueConvertor } from '../schema/conversions';
+import { type BasicJSTypeSchema } from '../schema/JSType';
 export declare class ToLiteralConvertor<T> implements TypedValueConvertor<T> {
     readonly value: T;
     constructor(value: T);
-    getAction(key: string): TypeConversionAction | undefined;
     matches(value: unknown): boolean;
     convert(value: unknown): T;
     convertWith(value: unknown): T;
+    createJSTypeSchema(): BasicJSTypeSchema;
 }

@@ -5,7 +5,6 @@ import { type JSONObject } from '../schema/JSON'
 import {
   TypedActionsValueConvertor,
   type TypedActionMap,
-  DefaultValueAction,
   DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
 
@@ -29,13 +28,10 @@ export class NegateBooleanAction implements TypeConversionAction<boolean> {
 }
 
 export const DEFAULT_BOOLEAN_ACTIONS: TypedActionMap<boolean> = {
-  untyped: Object.assign(
-    {
-      default: new DefaultValueAction(),
-      parse: new ParseToBooleanAction()
-    },
-    DEFAULT_UNTYPED_CONVERSIONS
-  ),
+  untyped: { ...DEFAULT_UNTYPED_CONVERSIONS },
+  conversion: {
+    parse: new ParseToBooleanAction()
+  },
   typed: {
     negate: new NegateBooleanAction()
   }

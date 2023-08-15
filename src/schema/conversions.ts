@@ -1,4 +1,8 @@
-import { type JSONSchema } from 'json-schema-typed'
+import {
+  type JSTypeSchema,
+  type BasicJSTypeSchema,
+  type JSTypeSchemaUnion
+} from './JSType'
 import { type JSONObject } from './JSON'
 
 export interface TypeMarkedObject extends JSONObject {
@@ -9,16 +13,18 @@ export type TypedActionRequest = TypeMarkedObject | string
 
 export interface TypeConversionSchema {
   type: string
-  actions: TypedActionRequest[]
+  prepare?: TypedActionRequest[]
+  convertVia?: TypedActionRequest
+  finalize?: TypedActionRequest[]
 }
 
-export interface TypeUnionSchema {
-  anyOf: TypeConversionSchema[]
+export interface TypeConversionSchemaUnion {
+  anyOf: Array<TypeConversionSchema | string>
 }
 
 export type TypeConversionRequest = (
   TypeConversionSchema |
-  TypeUnionSchema |
+  TypeConversionSchemaUnion |
   string
 )
 
@@ -28,14 +34,15 @@ export interface TypeConversionAction<F = any, T = F> {
     options?: JSONObject,
     resolver?: TypeConversionResolver
   ) => T
+  createSchema?: (
+    options?: JSONObject,
+    resolver?: TypeConversionResolver
+  ) => BasicJSTypeSchema
   modifySchema?: (
-    schema: JSONSchema,
-    options?: JSONObject
-  ) => void
-  replaceSchema?: (
-    schema: JSONSchema,
-    options?: JSONObject
-  ) => JSONSchema
+    schema: BasicJSTypeSchema,
+    options?: JSONObject,
+    resolver?: TypeConversionResolver
+  ) => BasicJSTypeSchema
 }
 
 export interface TypedValueConvertor<T = any> {
@@ -43,21 +50,14 @@ export interface TypedValueConvertor<T = any> {
   convert: (value: unknown) => T
   convertWith: (
     value: unknown,
-    actions: TypedActionRequest[],
+    schema: Partial<TypeConversionSchema>,
     resolver?: TypeConversionResolver
   ) => T
-  getAction: (key: string) => TypeConversionAction | undefined
+  createJSTypeSchema: (
+    source?: Partial<TypeConversionSchema>,
+    resolver?: TypeConversionResolver
+  ) => BasicJSTypeSchema
 }
-
-export const JSON_SCHEMA_TYPE_NAMES = [
-  'string',
-  'number',
-  'integer',
-  'object',
-  'array',
-  'boolean',
-  'null'
-]
 
 export class TypeConversionResolver {
   readonly convertors: Record<string, TypedValueConvertor>
@@ -72,19 +72,23 @@ export class TypeConversionResolver {
   ): TypeConversionSchema | undefined {
     if (typeof request === 'object') {
       if ('anyOf' in request) {
-        for (const schema of request.anyOf) {
+        for (const item of request.anyOf) {
+          const schema = typeof item === 'object' ? item : { type: item }
           const convertor = this.convertors[schema.type]
           if (convertor?.matches(value)) {
             return schema
           }
         }
-        return request.anyOf[0]
+        const firstItem = request.anyOf[0]
+        if (firstItem != null) {
+          return typeof firstItem === 'object' ? firstItem : { type: firstItem }
+        }
+        return undefined
       }
       return request
     }
     return {
-      type: request,
-      actions: []
+      type: request
     }
   }
 
@@ -96,56 +100,34 @@ export class TypeConversionResolver {
     if (schema != null) {
       const convertor = this.convertors[schema.type]
       if (convertor != null) {
-        return convertor.convertWith(value, schema.actions, this)
+        return convertor.convertWith(value, schema, this)
       }
     }
   }
 
-  getExpandedSchema (
-    source: TypeConversionRequest,
-    allowedTypes?: string[]
-  ): JSONSchema | undefined {
+  createJSTypeSchema (source: TypeConversionRequest): JSTypeSchema | undefined {
     if (typeof source === 'object') {
       if ('anyOf' in source) {
-        const schemas = source.anyOf.map(
-          item => this.getExpandedSchema(item, allowedTypes)
-        )
-        return {
-          anyOf: schemas.filter(item => item != null) as JSONSchema[]
+        const union: JSTypeSchemaUnion = {
+          anyOf: []
         }
-      }
-      if (allowedTypes != null) {
-        if (!allowedTypes.includes(source.type)) {
-          return undefined
-        }
-      }
-      const convertor = this.convertors[source.type]
-      if (convertor != null) {
-        const schema: JSONObject = {
-          type: source.type
-        }
-        for (const request of source.actions) {
-          const options = typeof request === 'object'
-            ? request
-            : { type: request }
-          const action = convertor.getAction(options.type)
-          if (action?.modifySchema != null) {
-            action.modifySchema(schema, options)
+        for (const item of source.anyOf) {
+          const subschema = this.createJSTypeSchema(item)
+          if (subschema != null && 'type' in subschema) {
+            union.anyOf.push(subschema)
           }
         }
-        return schema
+        return union
       }
-      return undefined
+      const sourceSchema = typeof source === 'object' ? source : { type: source }
+      if (sourceSchema != null) {
+        const convertor = this.convertors[sourceSchema.type]
+        if (convertor != null) {
+          return convertor.createJSTypeSchema(sourceSchema, this)
+        }
+      }
+    } else {
+      return this.createJSTypeSchema({ type: source })
     }
-    return {
-      type: source
-    }
-  }
-
-  getJSONSchema (
-    source: TypeConversionRequest
-  ): JSONSchema | undefined {
-    const schema = this.getExpandedSchema(source, JSON_SCHEMA_TYPE_NAMES)
-    return schema != null ? schema : undefined
   }
 }

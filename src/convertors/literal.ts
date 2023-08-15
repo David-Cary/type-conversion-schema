@@ -1,7 +1,9 @@
+import { type TypedValueConvertor } from '../schema/conversions'
 import {
-  type TypedValueConvertor,
-  type TypeConversionAction
-} from '../schema/conversions'
+  type BasicJSTypeSchema,
+  type TypedJSTypeSchema,
+  getExtendedTypeOf
+} from '../schema/JSType'
 import { cloneJSON } from '../schema/JSON'
 
 export class ToLiteralConvertor<T> implements TypedValueConvertor<T> {
@@ -9,10 +11,6 @@ export class ToLiteralConvertor<T> implements TypedValueConvertor<T> {
 
   constructor (value: T) {
     this.value = value
-  }
-
-  getAction (key: string): TypeConversionAction | undefined {
-    return undefined
   }
 
   matches (value: unknown): boolean {
@@ -25,5 +23,16 @@ export class ToLiteralConvertor<T> implements TypedValueConvertor<T> {
 
   convertWith (value: unknown): T {
     return cloneJSON(this.value)
+  }
+
+  createJSTypeSchema (): BasicJSTypeSchema {
+    const schema = {
+      type: getExtendedTypeOf(this.value)
+    }
+    if (this.value != null) {
+      const typed = schema as TypedJSTypeSchema<T>
+      typed.const = cloneJSON(this.value)
+    }
+    return schema as BasicJSTypeSchema
   }
 }

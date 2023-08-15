@@ -1,12 +1,13 @@
 import { type TypeConversionAction } from '../schema/conversions';
 import { type JSONObject } from '../schema/JSON';
 import { TypedActionsValueConvertor, type TypedActionMap } from './actions';
-import { type JSONSchema } from 'json-schema-typed';
+import { type BasicJSTypeSchema } from '../schema/JSType';
 export type POJObject = Record<string, unknown>;
 export declare function getObjectFrom(source: unknown): POJObject;
 export declare class WrapInObjectAction implements TypeConversionAction<any, POJObject> {
     transform(value: any, options?: JSONObject): POJObject;
-    replaceSchema(schema: JSONSchema, options?: JSONObject): JSONSchema;
+    createSchema(): BasicJSTypeSchema;
+    modifySchema(schema: BasicJSTypeSchema, options?: JSONObject): BasicJSTypeSchema;
 }
 export declare class CloneViaSpreadAction implements TypeConversionAction<POJObject> {
     transform(value: POJObject, options?: JSONObject): POJObject;
