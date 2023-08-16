@@ -8,12 +8,15 @@ export interface AbstractJSTypeSchema {
     title?: string;
     definitions?: Record<string, JSTypeSchema>;
 }
-export interface TypedJSTypeSchema<T> extends AbstractJSTypeSchema {
+export interface TypedJSTypeSchema extends AbstractJSTypeSchema {
+    type: string;
+}
+export interface VariedJSTypeSchema<T> extends TypedJSTypeSchema {
     default?: T;
     examples?: T[];
     const?: T;
 }
-export interface NumericJSTypeSchema<T> extends TypedJSTypeSchema<T> {
+export interface NumericJSTypeSchema<T> extends VariedJSTypeSchema<T> {
     integer?: boolean;
     exclusiveMaximum?: T;
     exclusiveMinimum?: T;
@@ -21,10 +24,10 @@ export interface NumericJSTypeSchema<T> extends TypedJSTypeSchema<T> {
     minimum?: T;
     multipleOf?: T;
 }
-export interface AnySchema extends AbstractJSTypeSchema {
+export interface AnySchema extends VariedJSTypeSchema<any> {
     type: 'any';
 }
-export interface ArraySchema<T = any> extends TypedJSTypeSchema<T[]> {
+export interface ArraySchema<T = any> extends VariedJSTypeSchema<T[]> {
     type: 'array';
     additionalItems?: JSTypeSchema;
     contains?: JSTypeSchema;
@@ -37,15 +40,15 @@ export interface ArraySchema<T = any> extends TypedJSTypeSchema<T[]> {
 export interface BigIntSchema extends NumericJSTypeSchema<bigint> {
     type: 'bigint';
 }
-export interface BooleanSchema extends TypedJSTypeSchema<boolean> {
+export interface BooleanSchema extends VariedJSTypeSchema<boolean> {
     type: 'boolean';
 }
-export interface FunctionSchema extends TypedJSTypeSchema<() => any> {
+export interface FunctionSchema extends VariedJSTypeSchema<() => any> {
     type: 'function';
     parameters: JSTypeSchema[];
     returns: JSTypeSchema;
 }
-export interface ObjectSchema extends TypedJSTypeSchema<object> {
+export interface ObjectSchema extends VariedJSTypeSchema<object> {
     type: 'object';
     additionalProperties?: JSTypeSchema;
     maxProperties?: number;
@@ -55,14 +58,14 @@ export interface ObjectSchema extends TypedJSTypeSchema<object> {
     propertyNames?: StringSchema;
     required?: string[];
 }
-export interface NullSchema extends AbstractJSTypeSchema {
+export interface NullSchema extends TypedJSTypeSchema {
     type: 'null';
 }
 export interface NumberSchema extends NumericJSTypeSchema<number> {
     type: 'number';
 }
 export type JSONSchemaContentEncoding = ('7bit' | '8bit' | 'base64' | 'binary' | 'ietf-token' | 'quoted-printable' | 'x-token');
-export interface StringSchema extends TypedJSTypeSchema<string> {
+export interface StringSchema extends VariedJSTypeSchema<string> {
     type: 'string';
     contentEncoding?: JSONSchemaContentEncoding;
     contentMediaType?: string;
@@ -71,11 +74,11 @@ export interface StringSchema extends TypedJSTypeSchema<string> {
     minLength?: number;
     pattern?: string;
 }
-export interface SymbolSchema extends AbstractJSTypeSchema {
+export interface SymbolSchema extends TypedJSTypeSchema {
     type: 'symbol';
     key?: string;
 }
-export interface UndefinedSchema extends AbstractJSTypeSchema {
+export interface UndefinedSchema extends TypedJSTypeSchema {
     type: 'undefined';
 }
 export declare enum JSTypeName {
@@ -100,7 +103,8 @@ export declare const JSON_SCHEMA_TYPE_NAMES: string[];
 export declare function JSTypeToJSONSchema(source: JSTypeSchema): JSONSchema | undefined;
 export type JSONSchemaObject = Exclude<JSONSchema, boolean>;
 export declare function initJSONSchema(source: JSTypeSchema, schema: JSONSchemaObject): void;
-export declare function initTypedJSONSchema<T>(source: TypedJSTypeSchema<T>, schema: JSONSchemaObject): void;
+export declare function initTypedJSONSchema<T>(source: VariedJSTypeSchema<T>, schema: JSONSchemaObject): void;
 export declare function getTypedArray<F, T = F>(source: F[], convert: (value: F) => T | undefined): T[];
 export declare function getTypedValueRecord<F, T = F>(source: Record<string, F>, convert: (value: F) => T | undefined): Record<string, T>;
 export declare function getExtendedTypeOf(value: any): JSTypeName;
+export declare function createBasicSchema(type: JSTypeName): BasicJSTypeSchema;

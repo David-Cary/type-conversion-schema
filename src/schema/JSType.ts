@@ -10,13 +10,17 @@ export interface AbstractJSTypeSchema {
   definitions?: Record<string, JSTypeSchema>
 }
 
-export interface TypedJSTypeSchema<T> extends AbstractJSTypeSchema {
+export interface TypedJSTypeSchema extends AbstractJSTypeSchema {
+  type: string
+}
+
+export interface VariedJSTypeSchema<T> extends TypedJSTypeSchema {
   default?: T
   examples?: T[]
   const?: T
 }
 
-export interface NumericJSTypeSchema<T> extends TypedJSTypeSchema<T> {
+export interface NumericJSTypeSchema<T> extends VariedJSTypeSchema<T> {
   integer?: boolean
   exclusiveMaximum?: T
   exclusiveMinimum?: T
@@ -25,11 +29,11 @@ export interface NumericJSTypeSchema<T> extends TypedJSTypeSchema<T> {
   multipleOf?: T
 }
 
-export interface AnySchema extends AbstractJSTypeSchema {
+export interface AnySchema extends VariedJSTypeSchema<any> {
   type: 'any'
 }
 
-export interface ArraySchema<T = any> extends TypedJSTypeSchema<T[]> {
+export interface ArraySchema<T = any> extends VariedJSTypeSchema<T[]> {
   type: 'array'
   additionalItems?: JSTypeSchema
   contains?: JSTypeSchema
@@ -44,17 +48,17 @@ export interface BigIntSchema extends NumericJSTypeSchema<bigint> {
   type: 'bigint'
 }
 
-export interface BooleanSchema extends TypedJSTypeSchema<boolean> {
+export interface BooleanSchema extends VariedJSTypeSchema<boolean> {
   type: 'boolean'
 }
 
-export interface FunctionSchema extends TypedJSTypeSchema<() => any> {
+export interface FunctionSchema extends VariedJSTypeSchema<() => any> {
   type: 'function'
   parameters: JSTypeSchema[]
   returns: JSTypeSchema
 }
 
-export interface ObjectSchema extends TypedJSTypeSchema<object> {
+export interface ObjectSchema extends VariedJSTypeSchema<object> {
   type: 'object'
   additionalProperties?: JSTypeSchema
   maxProperties?: number
@@ -65,7 +69,7 @@ export interface ObjectSchema extends TypedJSTypeSchema<object> {
   required?: string[]
 }
 
-export interface NullSchema extends AbstractJSTypeSchema {
+export interface NullSchema extends TypedJSTypeSchema {
   type: 'null'
 }
 
@@ -83,7 +87,7 @@ export type JSONSchemaContentEncoding = (
   'x-token'
 )
 
-export interface StringSchema extends TypedJSTypeSchema<string> {
+export interface StringSchema extends VariedJSTypeSchema<string> {
   type: 'string'
   contentEncoding?: JSONSchemaContentEncoding
   contentMediaType?: string
@@ -93,12 +97,12 @@ export interface StringSchema extends TypedJSTypeSchema<string> {
   pattern?: string
 }
 
-export interface SymbolSchema extends AbstractJSTypeSchema {
+export interface SymbolSchema extends TypedJSTypeSchema {
   type: 'symbol'
   key?: string
 }
 
-export interface UndefinedSchema extends AbstractJSTypeSchema {
+export interface UndefinedSchema extends TypedJSTypeSchema {
   type: 'undefined'
 }
 
@@ -113,7 +117,7 @@ export enum JSTypeName {
   OBJECT = 'object',
   STRING = 'string',
   SYMBOL = 'symbol',
-  UNDEFINED = 'undefined',
+  UNDEFINED = 'undefined'
 }
 
 export type BasicJSTypeSchema = (
@@ -267,7 +271,7 @@ export function initJSONSchema (
 }
 
 export function initTypedJSONSchema<T> (
-  source: TypedJSTypeSchema<T>,
+  source: VariedJSTypeSchema<T>,
   schema: JSONSchemaObject
 ): void {
   if ('default' in source) schema.default = source.default
@@ -308,4 +312,9 @@ export function getExtendedTypeOf (value: any): JSTypeName {
   if (value === null) return JSTypeName.NULL
   if (Array.isArray(value)) return JSTypeName.ARRAY
   return typeof value as JSTypeName
+}
+
+export function createBasicSchema (type: JSTypeName): BasicJSTypeSchema {
+  const schema = { type }
+  return schema as BasicJSTypeSchema
 }

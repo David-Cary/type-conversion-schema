@@ -10,7 +10,8 @@ import {
   type BasicJSTypeSchema,
   JSTypeName,
   getTypedArray,
-  getExtendedTypeOf
+  getExtendedTypeOf,
+  createBasicSchema
 } from '../schema/JSType'
 import {
   type JSONObject,
@@ -344,8 +345,8 @@ export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<
       return source
     }
     if (this.typeName in Object.values(JSTypeName)) {
-      const newSchema = { type: this.typeName }
-      return newSchema as BasicJSTypeSchema
+      const type = this.typeName as JSTypeName
+      return createBasicSchema(type)
     }
     return { type: 'any' }
   }
