@@ -7,6 +7,7 @@ export declare class ForceValueAction implements TypeConversionAction {
 export declare class DefaultValueAction implements TypeConversionAction {
     transform(value: any, options?: JSONObject): any;
 }
+export declare function getNestedValue(source: any, path: any): any;
 export declare class GetValueAction implements TypeConversionAction {
     transform(value: any, options?: JSONObject): any;
 }

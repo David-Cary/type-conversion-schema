@@ -14,6 +14,7 @@
     "test-bool": "jest tests/boolean.test.ts",
     "test-number": "jest tests/number.test.ts",
     "test-string": "jest tests/string.test.ts",
+    "test-object": "jest tests/object.test.ts",
     "build": "tsc"
   },
   "keywords": [

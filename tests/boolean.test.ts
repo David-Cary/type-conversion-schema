@@ -47,7 +47,7 @@ describe("ToBooleanConvertor", () => {
           prepare: [
             {
               type: 'get',
-              key: 'value'
+              path: 'value'
             }
           ]
         }

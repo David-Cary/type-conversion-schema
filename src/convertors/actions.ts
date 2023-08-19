@@ -36,19 +36,39 @@ export class DefaultValueAction implements TypeConversionAction {
   }
 }
 
+export function getNestedValue (
+  source: any,
+  path: any
+): any {
+  if (typeof source === 'object' && source != null) {
+    let target = source
+    const steps = Array.isArray(path) ? path : [path]
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i]
+      if (typeof target === 'object' && target != null) {
+        if (Array.isArray(target)) {
+          const index = Number(step)
+          if (isNaN(index)) return undefined
+          target = target[index]
+        }
+        const key = String(step)
+        target = target[key]
+      } else return undefined
+    }
+    return target
+  }
+  return source
+}
+
 export class GetValueAction implements TypeConversionAction {
   transform (
     value: any,
     options?: JSONObject
   ): any {
-    if (typeof value === 'object' && options?.key != null) {
-      if (Array.isArray(value)) {
-        const index = Number(options.key)
-        return value[index]
-      }
-      const key = String(options.key)
-      return (value as Record<string, any>)[key]
+    if (options?.path != null) {
+      return getNestedValue(value, options.path)
     }
+    return value
   }
 }
 
