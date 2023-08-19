@@ -43,10 +43,13 @@ export interface BigIntSchema extends NumericJSTypeSchema<bigint> {
 export interface BooleanSchema extends VariedJSTypeSchema<boolean> {
     type: 'boolean';
 }
-export interface FunctionSchema extends VariedJSTypeSchema<() => any> {
+export type AnyFunction = () => any;
+export interface FunctionSchema extends VariedJSTypeSchema<AnyFunction> {
     type: 'function';
-    parameters: JSTypeSchema[];
-    returns: JSTypeSchema;
+    parameters?: JSTypeSchema[];
+    optionalParameters?: JSTypeSchema[];
+    additionalParameters?: JSTypeSchema;
+    returns?: JSTypeSchema;
 }
 export interface ObjectSchema extends VariedJSTypeSchema<object> {
     type: 'object';

@@ -401,7 +401,7 @@ export class SetNestedValueAction<T = any> extends DeleteNestedValueAction<T> {
                   : getNestedValue(collection, finalStep)
               )
           if (resolver != null) {
-            const castAs = this.getConversionRequestFrom(options.as)
+            const castAs = getConversionRequestFrom(options.as)
             if (castAs != null) {
               targetValue = resolver.convert(targetValue, castAs)
             }
@@ -419,17 +419,6 @@ export class SetNestedValueAction<T = any> extends DeleteNestedValueAction<T> {
       }
     }
     return value
-  }
-
-  getConversionRequestFrom (source: unknown): TypeConversionRequest | undefined {
-    if (typeof source === 'string') return source
-    if (
-      typeof source === 'object' &&
-      source != null &&
-      ('type' in source || 'anyOf' in source)
-    ) {
-      return source as TypeConversionRequest
-    }
   }
 
   modifySchema (
@@ -508,7 +497,7 @@ export class SetNestedValueAction<T = any> extends DeleteNestedValueAction<T> {
     resolver?: TypeConversionResolver
   ): JSTypeSchema {
     if (resolver != null) {
-      const castAs = this.getConversionRequestFrom(options.as)
+      const castAs = getConversionRequestFrom(options.as)
       if (castAs != null) {
         const resolved = resolver.createJSTypeSchema(castAs)
         if (resolved != null) {

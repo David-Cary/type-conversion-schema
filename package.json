@@ -18,6 +18,7 @@
     "test-array": "jest tests/array.test.ts",
     "test-bigint": "jest tests/bigint.test.ts",
     "test-symbol": "jest tests/symbol.test.ts",
+    "test-function": "jest tests/function.test.ts",
     "build": "tsc"
   },
   "keywords": [

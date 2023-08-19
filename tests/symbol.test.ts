@@ -2,7 +2,7 @@ import { ToSymbolConvertor } from "../src/index"
 
 const convertor = new ToSymbolConvertor()
 
-describe("ToBooleanConvertor", () => {
+describe("ToSymbolConvertor", () => {
   describe("default action", () => {
     test("should generate a new symbol if none is provided", () => {
       const value = convertor.convertWith(
