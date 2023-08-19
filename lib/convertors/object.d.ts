@@ -8,6 +8,7 @@ export declare function getConversionRequestFrom(source: any): TypeConversionReq
 export interface PropertyConversionSchema {
     from?: Array<string | number>;
     as?: TypeConversionRequest;
+    default?: any;
 }
 export declare function getPropertyConversionFrom(source: any): PropertyConversionSchema;
 export declare function resolvePropertyConversion(source: any, key: string, schema: PropertyConversionSchema, resolver?: TypeConversionResolver): any;
@@ -26,13 +27,13 @@ export declare class CreateSpecifiedObjectAction extends ModifyObjectPropertiesA
 export declare class CloneViaSpreadAction implements TypeConversionAction<POJObject> {
     transform(value: POJObject, options?: JSONObject): POJObject;
 }
-export declare class DeleteObjectValueAction implements TypeConversionAction<POJObject> {
-    transform(value: POJObject, options?: JSONObject): POJObject;
+export declare class DeleteNestedValueAction<T = any> implements TypeConversionAction<T> {
+    transform(value: T, options?: JSONObject): T;
     modifySchema(schema: BasicJSTypeSchema, options?: JSONObject): BasicJSTypeSchema;
     getSubSchema(source: JSTypeSchema, key: any): JSTypeSchema | undefined;
 }
-export declare class SetObjectPropertyAction extends DeleteObjectValueAction implements TypeConversionAction<POJObject> {
-    transform(value: POJObject, options?: JSONObject, resolver?: TypeConversionResolver): POJObject;
+export declare class SetNestedValueAction<T = any> extends DeleteNestedValueAction<T> {
+    transform(value: T, options?: JSONObject, resolver?: TypeConversionResolver): T;
     getConversionRequestFrom(source: unknown): TypeConversionRequest | undefined;
     modifySchema(schema: BasicJSTypeSchema, options?: JSONObject, resolver?: TypeConversionResolver): BasicJSTypeSchema;
     setSubSchema(target: JSTypeSchema, key: any, value: JSTypeSchema): void;

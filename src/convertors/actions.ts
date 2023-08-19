@@ -50,9 +50,10 @@ export function getNestedValue (
           const index = Number(step)
           if (isNaN(index)) return undefined
           target = target[index]
+        } else {
+          const key = String(step)
+          target = target[key]
         }
-        const key = String(step)
-        target = target[key]
       } else return undefined
     }
     return target

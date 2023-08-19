@@ -74,7 +74,7 @@ export function getPropertyConversionFrom (source: any): PropertyConversionSchem
     if ('as' in source) {
       schema.as = getConversionRequestFrom(source.as)
     }
-    if('default' in source) {
+    if ('default' in source) {
       schema.default = source.default
     }
   }
@@ -90,7 +90,7 @@ export function resolvePropertyConversion (
   let value = schema.from != null
     ? getNestedValue(source, schema.from)
     : getNestedValue(source, key)
-  if(value === undefined && schema.default !== undefined) {
+  if (value === undefined && schema.default !== undefined) {
     value = cloneJSON(schema.default)
   }
   if (schema.as != null && resolver != null) {
@@ -279,11 +279,11 @@ export class CloneViaSpreadAction implements TypeConversionAction<POJObject> {
   }
 }
 
-export class DeleteObjectValueAction implements TypeConversionAction<POJObject> {
+export class DeleteNestedValueAction<T = any> implements TypeConversionAction<T> {
   transform (
-    value: POJObject,
+    value: T,
     options?: JSONObject
-  ): POJObject {
+  ): T {
     if (options != null && 'path' in options) {
       const path = Array.isArray(options.path) ? options.path : [options.path]
       if (path.length > 0) {
@@ -334,7 +334,7 @@ export class DeleteObjectValueAction implements TypeConversionAction<POJObject> 
             const finalKey = path[maxIndex]
             switch (targetSchema.type) {
               case JSTypeName.OBJECT: {
-                const objectSchema = targetSchema as ObjectSchema
+                const objectSchema = targetSchema
                 if (objectSchema.properties != null) {
                   const stringKey = String(finalKey)
                   /* eslint-disable @typescript-eslint/no-dynamic-delete */
@@ -380,14 +380,12 @@ export class DeleteObjectValueAction implements TypeConversionAction<POJObject> 
   }
 }
 
-export class SetObjectPropertyAction
-  extends DeleteObjectValueAction
-  implements TypeConversionAction<POJObject> {
+export class SetNestedValueAction<T = any> extends DeleteNestedValueAction<T> {
   transform (
-    value: POJObject,
+    value: T,
     options?: JSONObject,
     resolver?: TypeConversionResolver
-  ): POJObject {
+  ): T {
     if (options != null && 'path' in options) {
       const path = Array.isArray(options.path) ? options.path : [options.path]
       if (path.length > 0) {
@@ -535,9 +533,9 @@ export const DEFAULT_OBJECT_ACTIONS: TypedActionMap<POJObject> = {
   },
   typed: {
     clone: new CloneViaSpreadAction(),
-    delete: new DeleteObjectValueAction(),
+    delete: new DeleteNestedValueAction<POJObject>(),
     modify: new ModifyObjectPropertiesAction(),
-    set: new SetObjectPropertyAction()
+    set: new SetNestedValueAction<POJObject>()
   }
 }
 
