@@ -5,6 +5,7 @@ import { ToLiteralConvertor } from './literal'
 import { ToNumberConvertor } from './number'
 import { ToObjectConvertor } from './object'
 import { ToStringConvertor } from './string'
+import { ToSymbolConvertor } from './symbol'
 
 export * from './actions'
 export * from './array'
@@ -14,6 +15,7 @@ export * from './literal'
 export * from './number'
 export * from './object'
 export * from './string'
+export * from './symbol'
 
 export const DEFAULT_TYPE_CONVERTORS = {
   array: new ToArrayConvertor(),
@@ -23,5 +25,6 @@ export const DEFAULT_TYPE_CONVERTORS = {
   number: new ToNumberConvertor(),
   object: new ToObjectConvertor(),
   string: new ToStringConvertor(),
+  symbol: new ToSymbolConvertor(),
   undefined: new ToLiteralConvertor(undefined)
 }

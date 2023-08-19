@@ -324,7 +324,7 @@ export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<
           )
         }
       )
-      const typedResult = this.initializeJSTypeSchema(untypedResult)
+      const typedResult = this.initializeJSTypeSchema(untypedResult, source)
       this.runFinalization(
         source,
         (
@@ -361,7 +361,10 @@ export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<
     }
   }
 
-  initializeJSTypeSchema (source?: BasicJSTypeSchema): BasicJSTypeSchema {
+  initializeJSTypeSchema (
+    source?: BasicJSTypeSchema,
+    conversion?: Partial<TypeConversionSchema>
+  ): BasicJSTypeSchema {
     if (source != null && 'type' in source && source.type === this.typeName) {
       return source
     }

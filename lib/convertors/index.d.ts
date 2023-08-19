@@ -5,6 +5,7 @@ import { ToLiteralConvertor } from './literal';
 import { ToNumberConvertor } from './number';
 import { ToObjectConvertor } from './object';
 import { ToStringConvertor } from './string';
+import { ToSymbolConvertor } from './symbol';
 export * from './actions';
 export * from './array';
 export * from './bigint';
@@ -13,6 +14,7 @@ export * from './literal';
 export * from './number';
 export * from './object';
 export * from './string';
+export * from './symbol';
 export declare const DEFAULT_TYPE_CONVERTORS: {
     array: ToArrayConvertor;
     bigint: ToBigIntConvertor;
@@ -21,5 +23,6 @@ export declare const DEFAULT_TYPE_CONVERTORS: {
     number: ToNumberConvertor;
     object: ToObjectConvertor;
     string: ToStringConvertor;
+    symbol: ToSymbolConvertor;
     undefined: ToLiteralConvertor<undefined>;
 };

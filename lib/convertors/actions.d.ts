@@ -42,5 +42,5 @@ export declare class TypedActionsValueConvertor<T = any> implements TypedValueCo
     runFinalization(schema: Partial<TypeConversionSchema>, callback: VisitActionCallback<T>): void;
     createJSTypeSchema(source?: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): BasicJSTypeSchema;
     getModifiedSchema(action: TypeConversionAction, options?: JSONObject, resolver?: TypeConversionResolver, source?: BasicJSTypeSchema): BasicJSTypeSchema | undefined;
-    initializeJSTypeSchema(source?: BasicJSTypeSchema): BasicJSTypeSchema;
+    initializeJSTypeSchema(source?: BasicJSTypeSchema, conversion?: Partial<TypeConversionSchema>): BasicJSTypeSchema;
 }
