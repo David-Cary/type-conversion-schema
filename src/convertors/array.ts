@@ -89,7 +89,8 @@ export class ModifyArrayAction implements TypeConversionAction<any[]> {
     if (options.items != null) {
       const itemSchema = getPropertyConversionFrom(options.items)
       const uniqueItems = Boolean(options.uniqueItems)
-      for (let i = prefixItems.length; i < source.length; i++) {
+      const prefixCount = prefixItems.length
+      for (let i = source.length - 1; i >= prefixCount; i--) {
         const value = resolveIndexedConversion(
           source,
           i,
@@ -97,9 +98,10 @@ export class ModifyArrayAction implements TypeConversionAction<any[]> {
           resolver
         )
         if (uniqueItems && target.includes(value)) {
+          target.splice(i, 1)
           continue
         }
-        target.push(value)
+        target[i] = value
       }
     }
   }

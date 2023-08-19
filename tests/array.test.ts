@@ -116,7 +116,8 @@ describe("ToArrayConvertor", () => {
               }
             }
           ]
-        }
+        },
+        resolver
       )
       expect(value).toEqual(['1', '2'])
     })
