@@ -16,6 +16,7 @@
     "test-string": "jest tests/string.test.ts",
     "test-object": "jest tests/object.test.ts",
     "test-array": "jest tests/array.test.ts",
+    "test-bigint": "jest tests/bigint.test.ts",
     "build": "tsc"
   },
   "keywords": [

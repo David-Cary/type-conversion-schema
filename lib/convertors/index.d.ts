@@ -1,4 +1,5 @@
 import { ToArrayConvertor } from './array';
+import { ToBigIntConvertor } from './bigint';
 import { ToBooleanConvertor } from './boolean';
 import { ToLiteralConvertor } from './literal';
 import { ToNumberConvertor } from './number';
@@ -6,6 +7,7 @@ import { ToObjectConvertor } from './object';
 import { ToStringConvertor } from './string';
 export * from './actions';
 export * from './array';
+export * from './bigint';
 export * from './boolean';
 export * from './literal';
 export * from './number';
@@ -13,6 +15,7 @@ export * from './object';
 export * from './string';
 export declare const DEFAULT_TYPE_CONVERTORS: {
     array: ToArrayConvertor;
+    bigint: ToBigIntConvertor;
     boolean: ToBooleanConvertor;
     null: ToLiteralConvertor<null>;
     number: ToNumberConvertor;
