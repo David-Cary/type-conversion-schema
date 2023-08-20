@@ -1,7 +1,9 @@
 import {
   type JSTypeSchema,
+  type AbstractJSTypeSchema,
   type BasicJSTypeSchema,
-  type JSTypeSchemaUnion
+  type JSTypeSchemaUnion,
+  type JSTypeName
 } from './JSType'
 import { type JSONObject } from './JSON'
 
@@ -11,21 +13,22 @@ export interface TypeMarkedObject extends JSONObject {
 
 export type TypedActionRequest = TypeMarkedObject | string
 
-export interface TypeConversionSchema {
-  type: string
+export interface TypeConversionCallbacks {
   prepare?: TypedActionRequest[]
   convertVia?: TypedActionRequest
   finalize?: TypedActionRequest[]
 }
 
-export interface TypeConversionSchemaUnion {
-  anyOf: Array<TypeConversionSchema | string>
+export type TypeConversionSchema = BasicJSTypeSchema & TypeConversionCallbacks
+
+export interface TypeConversionSchemaUnion extends AbstractJSTypeSchema {
+  anyOf: Array<TypeConversionSchema | JSTypeName>
 }
 
 export type TypeConversionRequest = (
   TypeConversionSchema |
   TypeConversionSchemaUnion |
-  string
+  JSTypeName
 )
 
 export interface TypeConversionAction<F = any, T = F> {

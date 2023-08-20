@@ -111,3 +111,4 @@ export declare function getTypedArray<F, T = F>(source: F[], convert: (value: F)
 export declare function getTypedValueRecord<F, T = F>(source: Record<string, F>, convert: (value: F) => T | undefined): Record<string, T>;
 export declare function getExtendedTypeOf(value: any): JSTypeName;
 export declare function createBasicSchema(type: JSTypeName): BasicJSTypeSchema;
+export declare function stringToJSTypeName(source: string): JSTypeName;

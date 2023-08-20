@@ -321,3 +321,11 @@ export function createBasicSchema (type: JSTypeName): BasicJSTypeSchema {
   const schema = { type }
   return schema as BasicJSTypeSchema
 }
+
+export function stringToJSTypeName (source: string): JSTypeName {
+  for (const key in JSTypeName) {
+    const value = (JSTypeName as Record<string, JSTypeName>)[key]
+    if (value === source) return value
+  }
+  return JSTypeName.ANY
+}

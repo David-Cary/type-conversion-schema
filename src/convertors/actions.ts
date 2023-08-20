@@ -11,7 +11,8 @@ import {
   JSTypeName,
   getTypedArray,
   getExtendedTypeOf,
-  createBasicSchema
+  createBasicSchema,
+  stringToJSTypeName
 } from '../schema/JSType'
 import {
   type JSONObject,
@@ -96,12 +97,12 @@ export function getActionRequestFrom (
 export function getConversionSchemaFrom (source: any): TypeConversionSchema | undefined {
   switch (typeof source) {
     case 'string': {
-      return { type: source }
+      return { type: stringToJSTypeName(source) }
     }
     case 'object': {
       if (source != null && !Array.isArray(source)) {
         const schema: TypeConversionSchema = {
-          type: String(source.type)
+          type: stringToJSTypeName(String(source.type))
         }
         if (Array.isArray(source.prepare)) {
           schema.prepare = getTypedArray(

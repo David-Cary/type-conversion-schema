@@ -17,7 +17,8 @@ import {
   type ObjectSchema,
   type ArraySchema,
   JSTypeName,
-  getExtendedTypeOf
+  getExtendedTypeOf,
+  stringToJSTypeName
 } from '../schema/JSType'
 
 export type POJObject = Record<string, unknown>
@@ -47,7 +48,7 @@ export function getObjectFrom (source: unknown): POJObject {
 }
 
 export function getConversionRequestFrom (source: any): TypeConversionRequest | undefined {
-  if (typeof source === 'string') return source
+  if (typeof source === 'string') return stringToJSTypeName(source)
   if (
     typeof source === 'object' &&
     source != null &&
