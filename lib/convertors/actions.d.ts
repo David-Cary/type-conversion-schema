@@ -1,12 +1,6 @@
 import { type TypeConversionAction, type TypedActionRequest, type TypeMarkedObject, type TypedValueConvertor, type TypeConversionResolver, type TypeConversionSchema } from '../schema/conversions';
 import { type BasicJSTypeSchema } from '../schema/JSType';
 import { type JSONObject } from '../schema/JSON';
-export declare class ForceValueAction implements TypeConversionAction {
-    transform(value: any, options?: JSONObject): any;
-}
-export declare class DefaultValueAction implements TypeConversionAction {
-    transform(value: any, options?: JSONObject): any;
-}
 export declare function getNestedValue(source: any, path: any): any;
 export declare class GetValueAction implements TypeConversionAction {
     transform(value: any, options?: JSONObject): any;
@@ -15,13 +9,11 @@ export declare function getActionRequestFrom(source: any): TypedActionRequest | 
 export declare function getConversionSchemaFrom(source: any): TypeConversionSchema | undefined;
 export declare class NestedConversionAction implements TypeConversionAction {
     transform(value: any, options?: JSONObject, resolver?: TypeConversionResolver): any;
-    createSchema(options?: JSONObject, resolver?: TypeConversionResolver): BasicJSTypeSchema;
+    expandSchema(schema: Partial<TypeConversionSchema>, options?: JSONObject, resolver?: TypeConversionResolver): void;
 }
 export declare const DEFAULT_UNTYPED_CONVERSIONS: {
     convert: NestedConversionAction;
-    default: DefaultValueAction;
     get: GetValueAction;
-    setTo: ForceValueAction;
 };
 export interface TypedActionMap<T> {
     typed: Record<string, TypeConversionAction<T>>;
@@ -36,11 +28,12 @@ export declare class TypedActionsValueConvertor<T = any> implements TypedValueCo
     constructor(typeName: string, convert: (value: unknown) => T, actions?: Partial<TypedActionMap<T>>);
     matches(value: unknown): boolean;
     convertWith(value: unknown, schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): T;
+    prepareValue(value: unknown, schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): unknown;
+    finalizeValue(value: T, schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): T;
     expandActionRequest(request: TypedActionRequest): TypeMarkedObject;
-    runPreparation(schema: Partial<TypeConversionSchema>, callback: VisitActionCallback<any>): void;
-    runConversion(schema: Partial<TypeConversionSchema>, callback: VisitActionCallback<any, T>): void;
-    runFinalization(schema: Partial<TypeConversionSchema>, callback: VisitActionCallback<T>): void;
     createJSTypeSchema(source?: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): BasicJSTypeSchema;
-    getModifiedSchema(action: TypeConversionAction, options?: JSONObject, resolver?: TypeConversionResolver, source?: BasicJSTypeSchema): BasicJSTypeSchema | undefined;
-    initializeJSTypeSchema(source?: BasicJSTypeSchema, conversion?: Partial<TypeConversionSchema>): BasicJSTypeSchema;
+    expandSchema(schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): void;
+    prepareSchema(schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): void;
+    finalizeSchema(schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): void;
+    expandSchemaFor(schema: Partial<TypeConversionSchema>, request: TypedActionRequest, resolver?: TypeConversionResolver): void;
 }

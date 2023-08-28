@@ -14,12 +14,7 @@ describe("ToStringConvertor", () => {
       const value = convertor.convertWith(
         undefined,
         {
-          prepare: [
-            {
-              type: 'default',
-              value: 'x'
-            }
-          ]
+          default: 'x'
         }
       )
       expect(value).toBe('x')
@@ -30,12 +25,7 @@ describe("ToStringConvertor", () => {
       const value = convertor.convertWith(
         'a',
         {
-          prepare: [
-            {
-              type: 'setTo',
-              value: 'x'
-            }
-          ]
+          const: 'x'
         }
       )
       expect(value).toBe('x')

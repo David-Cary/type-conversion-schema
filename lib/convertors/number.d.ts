@@ -1,13 +1,9 @@
-import { type TypeConversionAction } from '../schema/conversions';
+import { type TypeConversionAction, type TypeConversionSchema, type TypeConversionResolver } from '../schema/conversions';
 import { type JSONObject } from '../schema/JSON';
 import { TypedActionsValueConvertor, type TypedActionMap } from './actions';
-import { type BasicJSTypeSchema } from '../schema/JSType';
-export declare class DefaultNumberAction implements TypeConversionAction<number> {
-    transform(value: number, options?: JSONObject): number;
-}
 export declare class RoundNumberAction implements TypeConversionAction<number> {
     transform(value: number): number;
-    modifySchema(schema: BasicJSTypeSchema, options?: JSONObject): BasicJSTypeSchema;
+    expandSchema(schema: Partial<TypeConversionSchema>, options?: JSONObject): void;
 }
 export declare class RoundUpNumberAction extends RoundNumberAction {
     transform(value: number): number;
@@ -15,28 +11,19 @@ export declare class RoundUpNumberAction extends RoundNumberAction {
 export declare class RoundDownNumberAction extends RoundNumberAction {
     transform(value: number): number;
 }
-export declare function getNumberWithDefault(source: any, defaultValue?: number): number;
-export declare class NumberToMultipleOfAction implements TypeConversionAction<number> {
-    transform(value: number, options?: JSONObject): number;
-    modifySchema(schema: BasicJSTypeSchema, options?: JSONObject): BasicJSTypeSchema;
-}
-export declare class MinimumNumberAction implements TypeConversionAction<number> {
-    transform(value: number, options?: JSONObject): number;
-    modifySchema(schema: BasicJSTypeSchema, options?: JSONObject): BasicJSTypeSchema;
-}
-export declare class MaximumNumberAction implements TypeConversionAction<number> {
-    transform(value: number, options?: JSONObject): number;
-    modifySchema(schema: BasicJSTypeSchema, options?: JSONObject): BasicJSTypeSchema;
-}
 export declare class PositiveNumberAction implements TypeConversionAction<number> {
     transform(value: number): number;
-    modifySchema(schema: BasicJSTypeSchema, options?: JSONObject): BasicJSTypeSchema;
+    expandSchema(schema: Partial<TypeConversionSchema>, options?: JSONObject): void;
 }
 export declare class NegativeNumberAction implements TypeConversionAction<number> {
     transform(value: number): number;
-    modifySchema(schema: BasicJSTypeSchema, options?: JSONObject): BasicJSTypeSchema;
+    expandSchema(schema: Partial<TypeConversionSchema>, options?: JSONObject): void;
 }
 export declare const DEFAULT_NUMBER_ACTIONS: TypedActionMap<number>;
 export declare class ToNumberConvertor extends TypedActionsValueConvertor<number> {
     constructor(actions?: TypedActionMap<number>);
+    prepareValue(value: unknown, schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): unknown;
+    finalizeValue(value: number, schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): number;
+    enforceRange(value: number, schema: Partial<TypeConversionSchema>): number;
+    finalizeSchema(schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): void;
 }

@@ -1,34 +1,27 @@
-import { type TypeConversionAction } from '../schema/conversions'
+import {
+  type TypeConversionAction,
+  type TypeConversionSchema,
+  type TypeConversionResolver
+} from '../schema/conversions'
 import { type JSONObject } from '../schema/JSON'
 import {
   TypedActionsValueConvertor,
   type TypedActionMap,
   DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
-import { type BasicJSTypeSchema } from '../schema/JSType'
-
-export class DefaultNumberAction implements TypeConversionAction<number> {
-  transform (
-    value: number,
-    options?: JSONObject
-  ): number {
-    return isNaN(value) ? Number(options?.value) : value
-  }
-}
 
 export class RoundNumberAction implements TypeConversionAction<number> {
   transform (value: number): number {
     return Math.round(value)
   }
 
-  modifySchema (
-    schema: BasicJSTypeSchema,
+  expandSchema (
+    schema: Partial<TypeConversionSchema>,
     options?: JSONObject
-  ): BasicJSTypeSchema {
+  ): void {
     if (schema.type === 'number') {
       schema.integer = true
     }
-    return schema
   }
 }
 
@@ -44,109 +37,20 @@ export class RoundDownNumberAction extends RoundNumberAction {
   }
 }
 
-export function getNumberWithDefault (
-  source: any,
-  defaultValue: number = 0
-): number {
-  const converted = Number(source)
-  return isNaN(converted) ? defaultValue : converted
-}
-
-export class NumberToMultipleOfAction implements TypeConversionAction<number> {
-  transform (
-    value: number,
-    options?: JSONObject
-  ): number {
-    const offset = getNumberWithDefault(options?.offset, 0.5)
-    const multiplier = getNumberWithDefault(options?.value, 1)
-    return multiplier * Math.floor((value / multiplier) + offset)
-  }
-
-  modifySchema (
-    schema: BasicJSTypeSchema,
-    options?: JSONObject
-  ): BasicJSTypeSchema {
-    if (schema.type === 'number') {
-      schema.multipleOf = getNumberWithDefault(options?.value, 1)
-      schema.integer = schema.multipleOf % 1 === 0
-    }
-    return schema
-  }
-}
-
-export class MinimumNumberAction implements TypeConversionAction<number> {
-  transform (
-    value: number,
-    options?: JSONObject
-  ): number {
-    if (options != null) {
-      const minimum = Number(options.value)
-      if (!isNaN(minimum) && value < minimum) {
-        return minimum
-      }
-    }
-    return value
-  }
-
-  modifySchema (
-    schema: BasicJSTypeSchema,
-    options?: JSONObject
-  ): BasicJSTypeSchema {
-    if (schema.type === 'number' && options != null) {
-      const minimum = Number(options.value)
-      if (!isNaN(minimum)) {
-        schema.minimum = minimum
-        if (minimum % 1 !== 0) schema.integer = false
-      }
-    }
-    return schema
-  }
-}
-
-export class MaximumNumberAction implements TypeConversionAction<number> {
-  transform (
-    value: number,
-    options?: JSONObject
-  ): number {
-    if (options != null) {
-      const maximum = Number(options.value)
-      if (!isNaN(maximum) && value > maximum) {
-        return maximum
-      }
-    }
-    return value
-  }
-
-  modifySchema (
-    schema: BasicJSTypeSchema,
-    options?: JSONObject
-  ): BasicJSTypeSchema {
-    if (schema.type === 'number' && options != null) {
-      const maximum = Number(options.value)
-      if (!isNaN(maximum)) {
-        schema.maximum = maximum
-        if (maximum % 1 !== 0) schema.integer = false
-      }
-    }
-    return schema
-  }
-}
-
 export class PositiveNumberAction implements TypeConversionAction<number> {
   transform (value: number): number {
     return value < 0 ? -value : value
   }
 
-  modifySchema (
-    schema: BasicJSTypeSchema,
+  expandSchema (
+    schema: Partial<TypeConversionSchema>,
     options?: JSONObject
-  ): BasicJSTypeSchema {
+  ): void {
     if (schema.type === 'number') {
       if (schema.minimum === undefined || schema.minimum < 0) {
         schema.minimum = 0
       }
     }
-    return schema
   }
 }
 
@@ -155,16 +59,15 @@ export class NegativeNumberAction implements TypeConversionAction<number> {
     return value > 0 ? -value : value
   }
 
-  modifySchema (
-    schema: BasicJSTypeSchema,
+  expandSchema (
+    schema: Partial<TypeConversionSchema>,
     options?: JSONObject
-  ): BasicJSTypeSchema {
+  ): void {
     if (schema.type === 'number') {
       if (schema.maximum === undefined || schema.maximum > 0) {
         schema.maximum = 0
       }
     }
-    return schema
   }
 }
 
@@ -172,10 +75,6 @@ export const DEFAULT_NUMBER_ACTIONS: TypedActionMap<number> = {
   untyped: { ...DEFAULT_UNTYPED_CONVERSIONS },
   conversion: {},
   typed: {
-    default: new DefaultNumberAction(),
-    max: new MaximumNumberAction(),
-    min: new MinimumNumberAction(),
-    multiple: new NumberToMultipleOfAction(),
     negative: new NegativeNumberAction(),
     positive: new PositiveNumberAction(),
     round: new RoundNumberAction(),
@@ -189,5 +88,74 @@ export class ToNumberConvertor extends TypedActionsValueConvertor<number> {
     actions: TypedActionMap<number> = DEFAULT_NUMBER_ACTIONS
   ) {
     super('number', Number, actions)
+  }
+
+  prepareValue (
+    value: unknown,
+    schema: Partial<TypeConversionSchema>,
+    resolver?: TypeConversionResolver
+  ): unknown {
+    if ('const' in schema && typeof schema.const === 'number') {
+      return schema.const
+    }
+    value = super.prepareValue(value, schema, resolver)
+    return value
+  }
+
+  finalizeValue (
+    value: number,
+    schema: Partial<TypeConversionSchema>,
+    resolver?: TypeConversionResolver
+  ): number {
+    if (
+      isNaN(value) &&
+      'default' in schema &&
+      typeof schema.default === 'number'
+    ) {
+      value = schema.default
+    }
+    value = this.enforceRange(value, schema)
+    if ('multipleOf' in schema && typeof schema.multipleOf === 'number') {
+      value = schema.multipleOf * Math.round(value / schema.multipleOf)
+    }
+    value = super.finalizeValue(value, schema, resolver)
+    return value
+  }
+
+  enforceRange (
+    value: number,
+    schema: Partial<TypeConversionSchema>
+  ): number {
+    if ('minimum' in schema && typeof schema.minimum === 'number') {
+      if (value < schema.minimum) {
+        value = schema.minimum
+      }
+    } else if ('exclusiveMinimum' in schema && typeof schema.exclusiveMinimum === 'number') {
+      if (value <= schema.exclusiveMinimum) {
+        const offset = schema.integer === true ? 1 : 0.1
+        value = schema.exclusiveMinimum + offset
+      }
+    }
+    if ('maximum' in schema && typeof schema.maximum === 'number') {
+      if (value < schema.maximum) {
+        value = schema.maximum
+      }
+    } else if ('exclusiveMaximum' in schema && typeof schema.exclusiveMaximum === 'number') {
+      if (value <= schema.exclusiveMaximum) {
+        const offset = schema.integer === true ? -1 : -0.1
+        value = schema.exclusiveMaximum + offset
+      }
+    }
+    return value
+  }
+
+  finalizeSchema (
+    schema: Partial<TypeConversionSchema>,
+    resolver?: TypeConversionResolver
+  ): void {
+    if ('multipleOf' in schema && typeof schema.multipleOf === 'number') {
+      schema.integer = schema.multipleOf % 1 === 0
+    }
+    super.finalizeSchema(schema, resolver)
   }
 }

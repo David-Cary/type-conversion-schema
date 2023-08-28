@@ -31,21 +31,40 @@ export type TypeConversionRequest = (
   JSTypeName
 )
 
+export function parseTypeConversionRequest (
+  request: TypeConversionRequest
+): TypeConversionSchema | TypeConversionSchemaUnion {
+  if (typeof request === 'string') {
+    return { type: request }
+  }
+  return request
+}
+
+export function removeTypeConversionActionsFrom (
+  schema: TypeConversionSchema
+): void {
+  if ('prepare' in schema) {
+    delete schema.prepare
+  }
+  if ('convertVia' in schema) {
+    delete schema.convertVia
+  }
+  if ('finalize' in schema) {
+    delete schema.finalize
+  }
+}
+
 export interface TypeConversionAction<F = any, T = F> {
   transform: (
     value: F,
     options?: JSONObject,
     resolver?: TypeConversionResolver
   ) => T
-  createSchema?: (
+  expandSchema?: (
+    schema: Partial<TypeConversionSchema>,
     options?: JSONObject,
     resolver?: TypeConversionResolver
-  ) => BasicJSTypeSchema
-  modifySchema?: (
-    schema: BasicJSTypeSchema,
-    options?: JSONObject,
-    resolver?: TypeConversionResolver
-  ) => BasicJSTypeSchema
+  ) => void
 }
 
 export interface TypedValueConvertor<T = any> {
@@ -56,6 +75,10 @@ export interface TypedValueConvertor<T = any> {
     schema: Partial<TypeConversionSchema>,
     resolver?: TypeConversionResolver
   ) => T
+  expandSchema?: (
+    schema: Partial<TypeConversionSchema>,
+    resolver?: TypeConversionResolver
+  ) => void
   createJSTypeSchema: (
     source?: Partial<TypeConversionSchema>,
     resolver?: TypeConversionResolver
@@ -106,6 +129,27 @@ export class TypeConversionResolver {
         return convertor.convertWith(value, schema, this)
       }
     }
+  }
+
+  getExpandedSchema (
+    source: TypeConversionRequest
+  ): TypeConversionSchema | TypeConversionSchemaUnion {
+    if (typeof source === 'string') {
+      return { type: source }
+    }
+    if ('anyOf' in source) {
+      const union: TypeConversionSchemaUnion = { ...source }
+      union.anyOf = union.anyOf.map(
+        item => this.getExpandedSchema(item) as TypeConversionSchema
+      )
+      return union
+    }
+    const schema = { ...source }
+    const convertor = this.convertors[schema.type]
+    if (convertor?.expandSchema != null) {
+      convertor.expandSchema(schema, this)
+    }
+    return schema
   }
 
   createJSTypeSchema (source: TypeConversionRequest): JSTypeSchema | undefined {

@@ -1,13 +1,8 @@
 import {
   type TypeConversionAction,
-  type TypeConversionResolver
+  type TypeConversionSchema
 } from '../schema/conversions'
 import { type JSONObject } from '../schema/JSON'
-import {
-  type BasicJSTypeSchema,
-  type SymbolSchema,
-  JSTypeName
-} from '../schema/JSType'
 import {
   TypedActionsValueConvertor,
   type TypedActionMap,
@@ -42,15 +37,17 @@ export class CreateKeySymbolAction implements TypeConversionAction<any, symbol> 
     return getSymbolFrom(value)
   }
 
-  createSchema (
-    options?: JSONObject,
-    resolver?: TypeConversionResolver
-  ): BasicJSTypeSchema {
-    const schema: SymbolSchema = { type: JSTypeName.SYMBOL }
-    if (options != null && typeof options.value === 'string') {
-      schema.key = options.value
+  expandSchema (
+    schema: Partial<TypeConversionSchema>,
+    options?: JSONObject
+  ): void {
+    if (
+      schema.type === 'symbol' &&
+      options != null &&
+      typeof options.key === 'string'
+    ) {
+      schema.key = options.key
     }
-    return schema
   }
 }
 

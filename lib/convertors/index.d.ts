@@ -1,3 +1,4 @@
+import { ToAnyConvertor } from './any';
 import { ToArrayConvertor } from './array';
 import { ToBigIntConvertor } from './bigint';
 import { ToBooleanConvertor } from './boolean';
@@ -7,6 +8,7 @@ import { ToNumberConvertor } from './number';
 import { ToObjectConvertor } from './object';
 import { ToStringConvertor } from './string';
 import { ToSymbolConvertor } from './symbol';
+export * from './any';
 export * from './actions';
 export * from './array';
 export * from './bigint';
@@ -18,6 +20,7 @@ export * from './object';
 export * from './string';
 export * from './symbol';
 export declare const DEFAULT_TYPE_CONVERTORS: {
+    any: ToAnyConvertor;
     array: ToArrayConvertor;
     bigint: ToBigIntConvertor;
     boolean: ToBooleanConvertor;

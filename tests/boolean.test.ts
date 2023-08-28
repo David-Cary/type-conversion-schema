@@ -12,12 +12,7 @@ describe("ToBooleanConvertor", () => {
       const value = convertor.convertWith(
         undefined,
         {
-          prepare: [
-            {
-              type: 'default',
-              value: true
-            }
-          ]
+          default: true
         }
       )
       expect(value).toBe(true)
@@ -28,12 +23,7 @@ describe("ToBooleanConvertor", () => {
       const value = convertor.convertWith(
         false,
         {
-          prepare: [
-            {
-              type: 'setTo',
-              value: true
-            }
-          ]
+          const: true
         }
       )
       expect(value).toBe(true)

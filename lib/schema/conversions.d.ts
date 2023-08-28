@@ -14,15 +14,17 @@ export interface TypeConversionSchemaUnion extends AbstractJSTypeSchema {
     anyOf: Array<TypeConversionSchema | JSTypeName>;
 }
 export type TypeConversionRequest = (TypeConversionSchema | TypeConversionSchemaUnion | JSTypeName);
+export declare function parseTypeConversionRequest(request: TypeConversionRequest): TypeConversionSchema | TypeConversionSchemaUnion;
+export declare function removeTypeConversionActionsFrom(schema: TypeConversionSchema): void;
 export interface TypeConversionAction<F = any, T = F> {
     transform: (value: F, options?: JSONObject, resolver?: TypeConversionResolver) => T;
-    createSchema?: (options?: JSONObject, resolver?: TypeConversionResolver) => BasicJSTypeSchema;
-    modifySchema?: (schema: BasicJSTypeSchema, options?: JSONObject, resolver?: TypeConversionResolver) => BasicJSTypeSchema;
+    expandSchema?: (schema: Partial<TypeConversionSchema>, options?: JSONObject, resolver?: TypeConversionResolver) => void;
 }
 export interface TypedValueConvertor<T = any> {
     matches: (value: unknown) => boolean;
     convert: (value: unknown) => T;
     convertWith: (value: unknown, schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver) => T;
+    expandSchema?: (schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver) => void;
     createJSTypeSchema: (source?: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver) => BasicJSTypeSchema;
 }
 export declare class TypeConversionResolver {
@@ -30,5 +32,6 @@ export declare class TypeConversionResolver {
     constructor(convertors?: Record<string, TypedValueConvertor>);
     getRequestSchema(request: TypeConversionRequest, value?: unknown): TypeConversionSchema | undefined;
     convert(value: unknown, castAs: TypeConversionRequest): unknown;
+    getExpandedSchema(source: TypeConversionRequest): TypeConversionSchema | TypeConversionSchemaUnion;
     createJSTypeSchema(source: TypeConversionRequest): JSTypeSchema | undefined;
 }

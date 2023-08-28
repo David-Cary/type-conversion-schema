@@ -1,11 +1,14 @@
-import { type TypeConversionAction } from '../schema/conversions'
+import {
+  type TypeConversionAction,
+  type TypeConversionSchema,
+  type TypeConversionResolver
+} from '../schema/conversions'
 import { type JSONObject } from '../schema/JSON'
 import {
   TypedActionsValueConvertor,
   type TypedActionMap,
   DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
-import { type BasicJSTypeSchema } from '../schema/JSType'
 
 export function getBigIntFrom (
   value: any,
@@ -24,93 +27,20 @@ export function getBigIntFrom (
   return defaultValue
 }
 
-export class BigIntToMultipleOfAction implements TypeConversionAction<bigint> {
-  transform (
-    value: bigint,
-    options?: JSONObject
-  ): bigint {
-    const multiplier = getBigIntFrom(options?.value, 1n)
-    const offset = multiplier / 2n
-    const multiples = (value + offset) / multiplier
-    return multiplier * multiples
-  }
-
-  modifySchema (
-    schema: BasicJSTypeSchema,
-    options?: JSONObject
-  ): BasicJSTypeSchema {
-    if (schema.type === 'bigint') {
-      schema.multipleOf = getBigIntFrom(options?.value, 1n)
-    }
-    return schema
-  }
-}
-
-export class MinimumBigIntAction implements TypeConversionAction<bigint> {
-  transform (
-    value: bigint,
-    options?: JSONObject
-  ): bigint {
-    if (options != null) {
-      const minimum = getBigIntFrom(options.value)
-      if (value < minimum) {
-        return minimum
-      }
-    }
-    return value
-  }
-
-  modifySchema (
-    schema: BasicJSTypeSchema,
-    options?: JSONObject
-  ): BasicJSTypeSchema {
-    if (schema.type === 'bigint' && options != null) {
-      schema.minimum = getBigIntFrom(options.value)
-    }
-    return schema
-  }
-}
-
-export class MaximumBigIntAction implements TypeConversionAction<bigint> {
-  transform (
-    value: bigint,
-    options?: JSONObject
-  ): bigint {
-    if (options != null) {
-      const maximum = getBigIntFrom(options.value)
-      if (value > maximum) {
-        return maximum
-      }
-    }
-    return value
-  }
-
-  modifySchema (
-    schema: BasicJSTypeSchema,
-    options?: JSONObject
-  ): BasicJSTypeSchema {
-    if (schema.type === 'bigint' && options != null) {
-      schema.maximum = getBigIntFrom(options.value)
-    }
-    return schema
-  }
-}
-
 export class PositiveBigIntAction implements TypeConversionAction<bigint> {
   transform (value: bigint): bigint {
     return value < 0 ? -value : value
   }
 
-  modifySchema (
-    schema: BasicJSTypeSchema,
+  expandSchema (
+    schema: Partial<TypeConversionSchema>,
     options?: JSONObject
-  ): BasicJSTypeSchema {
+  ): void {
     if (schema.type === 'bigint') {
       if (schema.minimum === undefined || schema.minimum < 0) {
         schema.minimum = 0n
       }
     }
-    return schema
   }
 }
 
@@ -119,16 +49,15 @@ export class NegativeBigIntAction implements TypeConversionAction<bigint> {
     return value > 0 ? -value : value
   }
 
-  modifySchema (
-    schema: BasicJSTypeSchema,
+  expandSchema (
+    schema: Partial<TypeConversionSchema>,
     options?: JSONObject
-  ): BasicJSTypeSchema {
+  ): void {
     if (schema.type === 'bigint') {
       if (schema.maximum === undefined || schema.maximum > 0) {
         schema.maximum = 0n
       }
     }
-    return schema
   }
 }
 
@@ -136,9 +65,6 @@ export const DEFAULT_BIG_INT_ACTIONS: TypedActionMap<bigint> = {
   untyped: { ...DEFAULT_UNTYPED_CONVERSIONS },
   conversion: {},
   typed: {
-    max: new MaximumBigIntAction(),
-    min: new MinimumBigIntAction(),
-    multiple: new BigIntToMultipleOfAction(),
     negative: new NegativeBigIntAction(),
     positive: new PositiveBigIntAction()
   }
@@ -151,11 +77,71 @@ export class ToBigIntConvertor extends TypedActionsValueConvertor<bigint> {
     super('bigint', getBigIntFrom, actions)
   }
 
-  initializeJSTypeSchema (source?: BasicJSTypeSchema): BasicJSTypeSchema {
-    const schema = super.initializeJSTypeSchema(source)
+  prepareValue (
+    value: unknown,
+    schema: Partial<TypeConversionSchema>,
+    resolver?: TypeConversionResolver
+  ): unknown {
+    if ('const' in schema && typeof schema.const === 'bigint') {
+      return schema.const
+    }
+    value = super.prepareValue(value, schema, resolver)
+    if (
+      value == null &&
+      'default' in schema &&
+      typeof schema.default === 'bigint'
+    ) {
+      value = schema.default
+    }
+    return value
+  }
+
+  finalizeValue (
+    value: bigint,
+    schema: Partial<TypeConversionSchema>,
+    resolver?: TypeConversionResolver
+  ): bigint {
+    value = this.enforceRange(value, schema)
+    if ('multipleOf' in schema && typeof schema.multipleOf === 'bigint') {
+      const halfStep = schema.multipleOf / 2n
+      value = schema.multipleOf * ((value + halfStep) / schema.multipleOf)
+    }
+    value = super.finalizeValue(value, schema, resolver)
+    return value
+  }
+
+  enforceRange (
+    value: bigint,
+    schema: Partial<TypeConversionSchema>
+  ): bigint {
+    if ('minimum' in schema && typeof schema.minimum === 'bigint') {
+      if (value < schema.minimum) {
+        value = schema.minimum
+      }
+    } else if ('exclusiveMinimum' in schema && typeof schema.exclusiveMinimum === 'bigint') {
+      if (value <= schema.exclusiveMinimum) {
+        value = schema.exclusiveMinimum + 1n
+      }
+    }
+    if ('maximum' in schema && typeof schema.maximum === 'bigint') {
+      if (value < schema.maximum) {
+        value = schema.maximum
+      }
+    } else if ('exclusiveMaximum' in schema && typeof schema.exclusiveMaximum === 'bigint') {
+      if (value <= schema.exclusiveMaximum) {
+        value = schema.exclusiveMaximum - 1n
+      }
+    }
+    return value
+  }
+
+  finalizeSchema (
+    schema: Partial<TypeConversionSchema>,
+    resolver?: TypeConversionResolver
+  ): void {
     if (schema.type === 'bigint') {
       schema.integer = true
     }
-    return schema
+    super.finalizeSchema(schema, resolver)
   }
 }

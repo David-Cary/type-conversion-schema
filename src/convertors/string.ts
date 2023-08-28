@@ -1,12 +1,14 @@
-import { type TypeConversionAction } from '../schema/conversions'
+import {
+  type TypeConversionAction,
+  type TypeConversionSchema,
+  type TypeConversionResolver
+} from '../schema/conversions'
 import { type JSONObject } from '../schema/JSON'
-import { getNumberWithDefault } from './number'
 import {
   TypedActionsValueConvertor,
   type TypedActionMap,
   DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
-import { type BasicJSTypeSchema } from '../schema/JSType'
 
 export type StringifyReplacerCallback = (this: any, key: string, value: any) => any
 
@@ -33,6 +35,14 @@ export class StringifyAction implements TypeConversionAction<unknown, string> {
   transform (value: unknown): string {
     return safeJSONStringify(value)
   }
+}
+
+export function getNumberWithDefault (
+  source: any,
+  defaultValue: number = 0
+): number {
+  const converted = Number(source)
+  return isNaN(converted) ? defaultValue : converted
 }
 
 export class JoinTextAction implements TypeConversionAction<unknown, string> {
@@ -65,17 +75,16 @@ export class PadStringAction implements TypeConversionAction<string> {
     return atStart ? value.padStart(length, text) : value.padEnd(length, text)
   }
 
-  modifySchema (
-    schema: BasicJSTypeSchema,
+  expandSchema (
+    schema: Partial<TypeConversionSchema>,
     options?: JSONObject
-  ): BasicJSTypeSchema {
+  ): void {
     const length = getNumberWithDefault(options?.length, 0)
     if (schema.type === 'string') {
       if (schema.minLength === undefined || schema.minLength < length) {
         schema.minLength = length
       }
     }
-    return schema
   }
 }
 
@@ -89,10 +98,10 @@ export class StringSliceAction implements TypeConversionAction<string> {
     return value.slice(start, end)
   }
 
-  modifySchema (
-    schema: BasicJSTypeSchema,
+  expandSchema (
+    schema: Partial<TypeConversionSchema>,
     options?: JSONObject
-  ): BasicJSTypeSchema {
+  ): void {
     if (schema.type === 'string') {
       const end = Number(options?.end)
       if (!isNaN(end)) {
@@ -105,7 +114,6 @@ export class StringSliceAction implements TypeConversionAction<string> {
         }
       }
     }
-    return schema
   }
 }
 
@@ -189,14 +197,12 @@ export class StringFormatAction implements TypeConversionAction<string> {
     return value
   }
 
-  modifySchema (
-    schema: BasicJSTypeSchema,
-    options?: JSONObject
-  ): BasicJSTypeSchema {
+  expandSchema (
+    schema: Partial<TypeConversionSchema>
+  ): void {
     if (schema.type === 'string') {
       schema.format = this.formatName
     }
-    return schema
   }
 }
 
@@ -278,5 +284,24 @@ export class ToStringConvertor extends TypedActionsValueConvertor<string> {
     actions: TypedActionMap<string> = DEFAULT_STRING_ACTIONS
   ) {
     super('string', String, actions)
+  }
+
+  prepareValue (
+    value: unknown,
+    schema: Partial<TypeConversionSchema>,
+    resolver?: TypeConversionResolver
+  ): unknown {
+    if ('const' in schema && typeof schema.const === 'string') {
+      return schema.const
+    }
+    value = super.prepareValue(value, schema, resolver)
+    if (
+      value === undefined &&
+      'default' in schema &&
+      typeof schema.default === 'string'
+    ) {
+      return schema.default
+    }
+    return value
   }
 }

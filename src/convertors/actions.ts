@@ -4,38 +4,19 @@ import {
   type TypeMarkedObject,
   type TypedValueConvertor,
   type TypeConversionResolver,
-  type TypeConversionSchema
+  type TypeConversionSchema,
+  removeTypeConversionActionsFrom
 } from '../schema/conversions'
 import {
   type BasicJSTypeSchema,
-  JSTypeName,
   getTypedArray,
   getExtendedTypeOf,
-  createBasicSchema,
   stringToJSTypeName
 } from '../schema/JSType'
 import {
   type JSONObject,
   cloneJSON
 } from '../schema/JSON'
-
-export class ForceValueAction implements TypeConversionAction {
-  transform (
-    value: any,
-    options?: JSONObject
-  ): any {
-    return cloneJSON(options?.value)
-  }
-}
-
-export class DefaultValueAction implements TypeConversionAction {
-  transform (
-    value: any,
-    options?: JSONObject
-  ): any {
-    return value === undefined ? cloneJSON(options?.value) : value
-  }
-}
 
 export function getNestedValue (
   source: any,
@@ -141,33 +122,24 @@ export class NestedConversionAction implements TypeConversionAction {
     return value
   }
 
-  createSchema (
+  expandSchema (
+    schema: Partial<TypeConversionSchema>,
     options?: JSONObject,
     resolver?: TypeConversionResolver
-  ): BasicJSTypeSchema {
+  ): void {
     if (resolver != null && options != null) {
-      const schema = getConversionSchemaFrom(options.to)
-      if (schema != null) {
-        const resolved = resolver.createJSTypeSchema(schema)
-        if (resolved != null) {
-          if ('type' in resolved) {
-            return resolved
-          }
-          if (resolved.anyOf?.length > 0) {
-            return resolved.anyOf[0]
-          }
-        }
+      const subschema = getConversionSchemaFrom(options.to)
+      if (subschema != null) {
+        const resolved = resolver.getExpandedSchema(subschema) as unknown
+        options.to = resolved as JSONObject
       }
     }
-    return { type: 'any' }
   }
 }
 
 export const DEFAULT_UNTYPED_CONVERSIONS = {
   convert: new NestedConversionAction(),
-  default: new DefaultValueAction(),
-  get: new GetValueAction(),
-  setTo: new ForceValueAction()
+  get: new GetValueAction()
 }
 
 export interface TypedActionMap<T> {
@@ -209,170 +181,113 @@ export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<
     schema: Partial<TypeConversionSchema>,
     resolver?: TypeConversionResolver
   ): T {
-    let untypedResult = value
-    this.runPreparation(
-      schema,
-      (
-        action: TypeConversionAction<any>,
-        options?: JSONObject
-      ) => {
-        untypedResult = action.transform(untypedResult, options, resolver)
+    const untypedResult = this.prepareValue(value, schema, resolver)
+    let schemaConversion: T | undefined
+    if (schema.convertVia != null) {
+      const options = this.expandActionRequest(schema.convertVia)
+      const action = this.actions.conversion[options.type]
+      if (action != null) {
+        schemaConversion = action.transform(untypedResult, options, resolver)
       }
-    )
-    let conversionResult: T | undefined
-    this.runConversion(
-      schema,
-      (
-        action: TypeConversionAction<any, T>,
-        options?: JSONObject
-      ) => {
-        conversionResult = action.transform(untypedResult, options, resolver)
-      }
-    )
-    let typedResult = conversionResult != null
-      ? conversionResult
+    }
+    let typedResult = schemaConversion != null
+      ? schemaConversion
       : this.convert(untypedResult)
-    this.runFinalization(
-      schema,
-      (
-        action: TypeConversionAction<T>,
-        options?: JSONObject
-      ) => {
-        typedResult = action.transform(typedResult, options, resolver)
-      }
-    )
+    typedResult = this.finalizeValue(typedResult, schema, resolver)
     return typedResult
+  }
+
+  prepareValue (
+    value: unknown,
+    schema: Partial<TypeConversionSchema>,
+    resolver?: TypeConversionResolver
+  ): unknown {
+    if (schema.prepare != null) {
+      for (const request of schema.prepare) {
+        const options = this.expandActionRequest(request)
+        const action = this.actions.untyped[options.type]
+        if (action != null) {
+          value = action.transform(value, options, resolver)
+        }
+      }
+    }
+    return value
+  }
+
+  finalizeValue (
+    value: T,
+    schema: Partial<TypeConversionSchema>,
+    resolver?: TypeConversionResolver
+  ): T {
+    if (schema.finalize != null) {
+      for (const request of schema.finalize) {
+        const options = this.expandActionRequest(request)
+        const action = this.actions.typed[options.type]
+        if (action != null) {
+          value = action.transform(value, options, resolver)
+        }
+      }
+    }
+    return value
   }
 
   expandActionRequest (request: TypedActionRequest): TypeMarkedObject {
     return typeof request === 'object' ? request : { type: request }
   }
 
-  runPreparation (
-    schema: Partial<TypeConversionSchema>,
-    callback: VisitActionCallback<any>
-  ): void {
-    if (schema.prepare != null) {
-      for (const request of schema.prepare) {
-        const options = this.expandActionRequest(request)
-        const action = this.actions.untyped[options.type]
-        if (action != null) {
-          callback(action, options)
-        }
-      }
-    }
-  }
-
-  runConversion (
-    schema: Partial<TypeConversionSchema>,
-    callback: VisitActionCallback<any, T>
-  ): void {
-    if (schema.convertVia != null) {
-      const options = this.expandActionRequest(schema.convertVia)
-      const action = this.actions.conversion[options.type]
-      if (action != null) {
-        callback(action, options)
-      }
-    }
-  }
-
-  runFinalization (
-    schema: Partial<TypeConversionSchema>,
-    callback: VisitActionCallback<T>
-  ): void {
-    if (schema.finalize != null) {
-      for (const request of schema.finalize) {
-        const options = this.expandActionRequest(request)
-        const action = this.actions.typed[options.type]
-        if (action != null) {
-          callback(action, options)
-        }
-      }
-    }
-  }
-
   createJSTypeSchema (
     source?: Partial<TypeConversionSchema>,
     resolver?: TypeConversionResolver
   ): BasicJSTypeSchema {
-    if (source != null && resolver != null) {
-      let untypedResult: BasicJSTypeSchema | undefined
-      this.runPreparation(
-        source,
-        (
-          action: TypeConversionAction<any>,
-          options?: JSONObject
-        ) => {
-          untypedResult = this.getModifiedSchema(
-            action,
-            options,
-            resolver,
-            untypedResult
-          )
-        }
-      )
-      this.runConversion(
-        source,
-        (
-          action: TypeConversionAction<any, T>,
-          options?: JSONObject
-        ) => {
-          untypedResult = this.getModifiedSchema(
-            action,
-            options,
-            resolver,
-            untypedResult
-          )
-        }
-      )
-      const typedResult = this.initializeJSTypeSchema(untypedResult, source)
-      this.runFinalization(
-        source,
-        (
-          action: TypeConversionAction<T>,
-          options?: JSONObject
-        ) => {
-          const modifiedSchema = this.getModifiedSchema(
-            action,
-            options,
-            resolver,
-            typedResult
-          )
-          if (modifiedSchema != null) {
-            untypedResult = modifiedSchema
-          }
-        }
-      )
-      return typedResult
-    }
-    return this.initializeJSTypeSchema()
+    const schema = cloneJSON(source)
+    schema.type = stringToJSTypeName(this.typeName)
+    this.expandSchema(schema, resolver)
+    removeTypeConversionActionsFrom(schema)
+    return schema as BasicJSTypeSchema
   }
 
-  getModifiedSchema (
-    action: TypeConversionAction,
-    options?: JSONObject,
-    resolver?: TypeConversionResolver,
-    source?: BasicJSTypeSchema
-  ): BasicJSTypeSchema | undefined {
-    if (source != null && action.modifySchema != null) {
-      return action.modifySchema(source, options, resolver)
+  expandSchema (
+    schema: Partial<TypeConversionSchema>,
+    resolver?: TypeConversionResolver
+  ): void {
+    this.prepareSchema(schema, resolver)
+    if (schema.convertVia != null) {
+      this.expandSchemaFor(schema, schema.convertVia, resolver)
     }
-    if (action.createSchema != null) {
-      return action.createSchema(options, resolver)
+    this.finalizeSchema(schema, resolver)
+  }
+
+  prepareSchema (
+    schema: Partial<TypeConversionSchema>,
+    resolver?: TypeConversionResolver
+  ): void {
+    if (schema.prepare != null) {
+      for (const request of schema.prepare) {
+        this.expandSchemaFor(schema, request, resolver)
+      }
     }
   }
 
-  initializeJSTypeSchema (
-    source?: BasicJSTypeSchema,
-    conversion?: Partial<TypeConversionSchema>
-  ): BasicJSTypeSchema {
-    if (source != null && 'type' in source && source.type === this.typeName) {
-      return source
+  finalizeSchema (
+    schema: Partial<TypeConversionSchema>,
+    resolver?: TypeConversionResolver
+  ): void {
+    if (schema.finalize != null) {
+      for (const request of schema.finalize) {
+        this.expandSchemaFor(schema, request, resolver)
+      }
     }
-    if (this.typeName in Object.values(JSTypeName)) {
-      const type = this.typeName as JSTypeName
-      return createBasicSchema(type)
+  }
+
+  expandSchemaFor (
+    schema: Partial<TypeConversionSchema>,
+    request: TypedActionRequest,
+    resolver?: TypeConversionResolver
+  ): void {
+    const options = this.expandActionRequest(request)
+    const action = this.actions.untyped[options.type]
+    if (action?.expandSchema != null) {
+      action.expandSchema(schema, options, resolver)
     }
-    return { type: 'any' }
   }
 }
