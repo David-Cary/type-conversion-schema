@@ -7,17 +7,12 @@ test("x", ()=> {
 })
 
 describe("ToBigIntConvertor", () => {
-  describe("default action", () => {
+  describe("default value", () => {
     test("should use default value if target value does not resolve to a number", () => {
       const value = convertor.convertWith(
         undefined,
         {
-          finalize: [
-            {
-              type: 'default',
-              value: 0
-            }
-          ]
+          default: 0n
         }
       )
       expect(value).toEqual(0n)
@@ -26,60 +21,40 @@ describe("ToBigIntConvertor", () => {
       const value = convertor.convertWith(
         '1',
         {
-          finalize: [
-            {
-              type: 'default',
-              value: 0
-            }
-          ]
+          default: 0n
         }
       )
       expect(value).toBe(1n)
     })
   })
-  describe("setTo action", () => {
+  describe("const value", () => {
     test("should override the provided value", () => {
       const value = convertor.convertWith(
         3,
         {
-          prepare: [
-            {
-              type: 'setTo',
-              value: 0
-            }
-          ]
+          const: 0n
         }
       )
       expect(value).toBe(0n)
     })
   })
-  describe("max action", () => {
+  describe("max value", () => {
     test("should enforce maximum", () => {
       const value = convertor.convertWith(
         3,
         {
-          finalize: [
-            {
-              type: 'max',
-              value: 1
-            }
-          ]
+          maximum: 1n
         }
       )
       expect(value).toBe(1n)
     })
   })
-  describe("min action", () => {
+  describe("min value", () => {
     test("should enforce minimum", () => {
       const value = convertor.convertWith(
         3,
         {
-          finalize: [
-            {
-              type: 'min',
-              value: 4
-            }
-          ]
+          minimum: 4n
         }
       )
       expect(value).toBe(4n)
@@ -97,17 +72,12 @@ describe("ToBigIntConvertor", () => {
       expect(value).toBe(-1n)
     })
   })
-  describe("multiple action", () => {
+  describe("multipleOf value", () => {
     test("should force to nearest multiple of target number", () => {
       const value = convertor.convertWith(
         3,
         {
-          finalize: [
-            {
-              type: 'multiple',
-              value: 5
-            }
-          ]
+          multipleOf: 5n
         }
       )
       expect(value).toBe(5n)

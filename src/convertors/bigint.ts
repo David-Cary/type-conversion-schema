@@ -124,11 +124,11 @@ export class ToBigIntConvertor extends TypedActionsValueConvertor<bigint> {
       }
     }
     if ('maximum' in schema && typeof schema.maximum === 'bigint') {
-      if (value < schema.maximum) {
+      if (value > schema.maximum) {
         value = schema.maximum
       }
     } else if ('exclusiveMaximum' in schema && typeof schema.exclusiveMaximum === 'bigint') {
-      if (value <= schema.exclusiveMaximum) {
+      if (value >= schema.exclusiveMaximum) {
         value = schema.exclusiveMaximum - 1n
       }
     }

@@ -10,14 +10,12 @@ import {
 import {
   TypedActionsValueConvertor,
   type TypedActionMap,
-  getConversionSchemaFrom,
   DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
 import {
-  type JSTypeSchema,
-  type ArraySchema,
-  JSTypeName
-} from '../schema/JSType'
+  DeleteNestedValueAction,
+  SetNestedValueAction
+} from './object'
 
 export function getArrayFrom (source: unknown): any[] {
   if (Array.isArray(source)) {
@@ -34,12 +32,32 @@ export class CopyArrayAction implements TypeConversionAction<any[]> {
     if (options != null) {
       const start = 'from' in options ? Number(options.from) : 0
       if ('to' in options) {
-        const end = Number(options.to)
-        return value.slice(start, end)
+        const toPosition = Number(options.to)
+        if (toPosition != -1) {
+          const end = toPosition + 1
+          return value.slice(start, end)
+        }
       }
       return value.slice(start)
     }
     return value.slice()
+  }
+}
+
+export class ParseArrayStringAction implements TypeConversionAction<any, any[]> {
+  transform (
+    value: any,
+    options?: JSONObject
+  ): any[] {
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value)
+        return getArrayFrom(parsed)
+      } catch (error) {
+        return [value]
+      }
+    }
+    return getArrayFrom(value)
   }
 }
 
@@ -48,9 +66,9 @@ export class InsertArrayItemAction implements TypeConversionAction<any[]> {
     value: any[],
     options?: JSONObject
   ): any[] {
-    let index = 0
+    let index = value.length
     let repeat = 1
-    let itemValue: any
+    let itemValue: any = undefined
     if (options != null) {
       if ('index' in options) {
         index = Number(options.index)
@@ -67,16 +85,17 @@ export class InsertArrayItemAction implements TypeConversionAction<any[]> {
       const instance = cloneJSON(itemValue)
       params.push(instance)
     }
-    return value.splice.apply(null, params)
+    value.splice.apply(value, params)
+    return value
   }
 }
 
-export class RemoveArrayItemAction implements TypeConversionAction<any[]> {
+export class DeleteArrayItemAction implements TypeConversionAction<any[]> {
   transform (
     value: any[],
     options?: JSONObject
   ): any[] {
-    let index = 0
+    let index = -1
     let count = 1
     if (options != null) {
       if ('index' in options) {
@@ -86,155 +105,26 @@ export class RemoveArrayItemAction implements TypeConversionAction<any[]> {
         count = Number(options.count)
       }
     }
-    return value.splice(index, count)
-  }
-}
-
-export class SetArrayItemAction implements TypeConversionAction<any[]> {
-  transform (
-    value: any[],
-    options?: JSONObject,
-    resolver?: TypeConversionResolver
-  ): any[] {
-    let index = 0
-    let itemValue: any
-    if (options != null) {
-      if ('index' in options) {
-        index = Number(options.index)
-        if (index < 0) {
-          index = Math.max(0, value.length + index)
-        }
-        itemValue = value[index]
-      }
-      if (resolver != null && 'to' in options) {
-        const schema = getConversionSchemaFrom(options.to)
-        if (schema != null) {
-          itemValue = resolver.convert(itemValue, schema)
-        }
-      }
-    }
-    value[index] = itemValue
+    value.splice(index, count)
     return value
-  }
-}
-
-export class ModifyArrayAction implements TypeConversionAction<any[]> {
-  transform (
-    value: any[],
-    options?: JSONObject,
-    resolver?: TypeConversionResolver
-  ): any[] {
-    if (options != null) {
-      const schema = this.getArraySchemaFrom(options)
-      this.applySchemaTo(schema, value, resolver)
-    }
-    return value
-  }
-
-  getArraySchemaFrom (source: JSONObject): ArraySchema {
-    const schema: ArraySchema = { type: JSTypeName.ARRAY }
-    if (
-      typeof source.prefixItems === 'object' &&
-      source.prefixItems != null &&
-      Array.isArray(source.prefixItems)
-    ) {
-      schema.prefixItems = this.getSchemaList(source.prefixItems)
-    }
-    schema.items = this.getSchemaFrom(source.items)
-    if ('minItems' in source) {
-      schema.minItems = Number(source.minItems)
-    }
-    if ('maxItems' in source) {
-      schema.maxItems = Number(source.maxItems)
-    }
-    if ('uniqueItems' in source) {
-      schema.uniqueItems = Boolean(source.uniqueItems)
-    }
-    return schema
-  }
-
-  getSchemaList (source: any[]): JSTypeSchema[] {
-    const schemas: JSTypeSchema[] = []
-    for (let i = 0; i < source.length; i++) {
-      const schema = this.getSchemaFrom(source[i])
-      if (schema != null) {
-        schemas.push(schema)
-      }
-    }
-    return schemas
-  }
-
-  getSchemaFrom (source: any): JSTypeSchema | undefined {
-    if (
-      typeof source === 'object' &&
-      source != null &&
-      !Array.isArray(source)
-    ) {
-      if (typeof source.type === 'string' || Array.isArray(source.anyOf)) {
-        return source as JSTypeSchema
-      }
-    }
-  }
-
-  applySchemaTo (
-    schema: Partial<TypeConversionSchema>,
-    target: any[],
-    resolver?: TypeConversionResolver
-  ): void {
-    if ('minItems' in schema && schema.minItems != null) {
-      if (target.length < schema.minItems) {
-        target.length = schema.minItems
-      }
-    }
-    if ('maxItems' in schema && schema.maxItems != null) {
-      if (target.length > schema.maxItems) {
-        target.length = schema.maxItems
-      }
-    }
-    let prefixCount = 0
-    if ('prefixItems' in schema && schema.prefixItems != null) {
-      if (resolver != null) {
-        for (let i = 0; i < schema.prefixItems.length; i++) {
-          target[i] = resolver.convert(target[i], schema.prefixItems[i])
-        }
-      }
-      prefixCount = schema.prefixItems.length
-    }
-    if ('items' in schema && schema.items != null) {
-      const uniqueItems = ('uniqueItems' in schema && schema.uniqueItems != null)
-        ? schema.uniqueItems
-        : false
-      for (let i = target.length - 1; i >= prefixCount; i--) {
-        const value = resolver != null
-          ? resolver.convert(target[i], schema.items)
-          : target[i]
-        if (uniqueItems && target.includes(value)) {
-          target.splice(i, 1)
-        } else {
-          target[i] = value
-        }
-      }
-    } else {
-      target.length = prefixCount
-    }
   }
 }
 
 export const DEFAULT_ARRAY_ACTIONS: TypedActionMap<any[]> = {
   untyped: { ...DEFAULT_UNTYPED_CONVERSIONS },
-  conversion: {},
+  conversion: {
+    parse: new ParseArrayStringAction()
+  },
   typed: {
     clone: new CopyArrayAction(),
+    delete: new DeleteNestedValueAction<any[]>(),
+    deleteItem: new DeleteArrayItemAction(),
     insert: new InsertArrayItemAction(),
-    modify: new ModifyArrayAction(),
-    remove: new RemoveArrayItemAction(),
-    set: new SetArrayItemAction()
+    set: new SetNestedValueAction<any[]>()
   }
 }
 
 export class ToArrayConvertor extends TypedActionsValueConvertor<any[]> {
-  readonly mutator: ModifyArrayAction = new ModifyArrayAction()
-
   constructor (
     actions: TypedActionMap<any[]> = DEFAULT_ARRAY_ACTIONS
   ) {
@@ -266,7 +156,54 @@ export class ToArrayConvertor extends TypedActionsValueConvertor<any[]> {
     resolver?: TypeConversionResolver
   ): any[] {
     value = super.finalizeValue(value, schema, resolver)
-    this.mutator.applySchemaTo(schema, value, resolver)
+    this.applySchemaTo(schema, value, resolver)
     return value
+  }
+
+  applySchemaTo (
+    schema: Partial<TypeConversionSchema>,
+    target: any[],
+    resolver?: TypeConversionResolver
+  ): void {
+    let prefixCount = 0
+    if ('prefixItems' in schema && schema.prefixItems != null) {
+      if (resolver != null) {
+        for (let i = 0; i < schema.prefixItems.length; i++) {
+          target[i] = resolver.convert(target[i], schema.prefixItems[i])
+        }
+      }
+      prefixCount = schema.prefixItems.length
+    }
+    if ('items' in schema && schema.items != null) {
+      const uniqueItems = ('uniqueItems' in schema && schema.uniqueItems != null)
+        ? schema.uniqueItems
+        : false
+      if ('minItems' in schema && schema.minItems != null) {
+        if (target.length < schema.minItems) {
+          target.length = schema.minItems
+        }
+      }
+      if ('maxItems' in schema && schema.maxItems != null) {
+        if (target.length > schema.maxItems) {
+          target.length = schema.maxItems
+        }
+      }
+      if (resolver != null) {
+        for (let i = target.length - 1; i >= prefixCount; i--) {
+          target[i] = resolver.convert(target[i], schema.items)
+        }
+      }
+      if (uniqueItems) {
+        for (let i = target.length - 1; i >= prefixCount; i--) {
+          const value = target[i]
+          const matchIndex = target.indexOf(value)
+          if (matchIndex < i) {
+            target.splice(i, 1)
+          }
+        }
+      }
+    } else {
+      target.length = prefixCount
+    }
   }
 }

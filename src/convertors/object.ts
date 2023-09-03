@@ -1,6 +1,5 @@
 import {
   type TypeConversionAction,
-  type TypeConversionRequest,
   type TypeConversionResolver,
   type TypeConversionSchema
 } from '../schema/conversions'
@@ -8,16 +7,10 @@ import { type JSONObject } from '../schema/JSON'
 import {
   TypedActionsValueConvertor,
   type TypedActionMap,
+  getNestedValue,
   DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
 import { cloneJSON } from '../schema/JSON'
-import {
-  type JSTypeSchema,
-  type ObjectSchema,
-  JSTypeName,
-  getExtendedTypeOf,
-  stringToJSTypeName
-} from '../schema/JSType'
 
 export type POJObject = Record<string, unknown>
 
@@ -45,14 +38,13 @@ export function getObjectFrom (source: unknown): POJObject {
   return {}
 }
 
-export function getConversionRequestFrom (source: any): TypeConversionRequest | undefined {
-  if (typeof source === 'string') return stringToJSTypeName(source)
-  if (
-    typeof source === 'object' &&
-    source != null &&
-    ('type' in source || 'anyOf' in source)
-  ) {
-    return source as TypeConversionRequest
+export class CreateWrapperObjectAction implements TypeConversionAction<any, POJObject> {
+  transform (
+    value: any,
+    options?: JSONObject
+  ): POJObject {
+    const key = options?.key != null ? String(options.key) : 'value'
+    return { [key]: value }
   }
 }
 
@@ -92,60 +84,168 @@ export class PickPropertiesAction implements TypeConversionAction<POJObject> {
   }
 }
 
-export class ModifyObjectPropertiesAction implements TypeConversionAction<POJObject> {
+export class SetNestedValueAction<T> implements TypeConversionAction<T> {
   transform (
-    value: POJObject,
-    options?: JSONObject,
-    resolver?: TypeConversionResolver
-  ): POJObject {
-    if (options != null) {
-      const schema = this.getObjectSchemaFrom(options)
-      this.applySchemaTo(schema, value, resolver)
+    value: T,
+    options?: JSONObject
+  ): T {
+    if (options?.path != null) {
+      let propertyValue = (options.from != null)
+        ? getNestedValue(value, options.from)
+        : options.value
+      if (propertyValue === undefined && options.default !== undefined) {
+        propertyValue = options.default
+      }
+      this.setNestedValue(value, options.path, propertyValue)
     }
     return value
   }
 
-  getObjectSchemaFrom (source: JSONObject): ObjectSchema {
-    const schema: ObjectSchema = { type: JSTypeName.OBJECT }
-    if (
-      typeof source.properties === 'object' &&
-      source.properties != null &&
-      !Array.isArray(source.properties)
-    ) {
-      schema.properties = this.getSchemaMap(source.properties)
-    }
-    schema.additionalProperties = this.getSchemaFrom(source.additionalProperties)
-    if (
-      typeof source.patternProperties === 'object' &&
-      source.patternProperties != null &&
-      !Array.isArray(source.patternProperties)
-    ) {
-      schema.patternProperties = this.getSchemaMap(source.patternProperties)
-    }
-    return schema
-  }
-
-  getSchemaMap (source: Record<string, any>): Record<string, JSTypeSchema> {
-    const map: Record<string, JSTypeSchema> = {}
-    for (const key in source) {
-      const schema = this.getSchemaFrom(source[key])
-      if (schema != null) {
-        map[key] = schema
+  setNestedValue (
+    collection: any,
+    path: any,
+    value: unknown
+  ): void {
+    let target = collection
+    const steps = Array.isArray(path) ? path : [path]
+    const finalIndex = steps.length - 1
+    if (finalIndex >= 0) {
+      for (let i = 0; i < finalIndex; i++) {
+        const step = steps[i]
+        if (typeof target === 'object' && target != null) {
+          if (Array.isArray(target)) {
+            const index = Number(step)
+            if (isNaN(index)) return
+            const nextTarget = target[index] ?? this.createCollectionFor(steps[i + 1])
+            if (nextTarget != null) {
+              target[index] = nextTarget
+              target = nextTarget
+            } else return
+          } else {
+            const key = String(step)
+            const nextTarget = target[key] ?? this.createCollectionFor(steps[i + 1])
+            if (nextTarget != null) {
+              target[key] = nextTarget
+              target = nextTarget
+            } else return
+          }
+        } else return
+      }
+      if (typeof target === 'object' && target != null) {
+        const step = steps[finalIndex]
+        if (Array.isArray(target)) {
+          const index = Number(step)
+          if (isNaN(index)) return
+          target[index] = value
+        } else {
+          const key = String(step)
+          target[key] = value
+        }
       }
     }
-    return map
   }
 
-  getSchemaFrom (source: any): JSTypeSchema | undefined {
-    if (
-      typeof source === 'object' &&
-      source != null &&
-      !Array.isArray(source)
-    ) {
-      if (typeof source.type === 'string' || Array.isArray(source.anyOf)) {
-        return source as JSTypeSchema
+  createCollectionFor (key: any): POJObject | any[] | undefined {
+    switch (typeof key) {
+      case 'string': {
+        return {}
+      }
+      case 'number': {
+        return []
       }
     }
+  }
+}
+
+export class DeleteNestedValueAction<T> implements TypeConversionAction<T> {
+  transform (
+    value: T,
+    options?: JSONObject
+  ): T {
+    if (options?.path != null) {
+      this.deleteNestedValue(value, options.path)
+    }
+    return value
+  }
+
+  deleteNestedValue (
+    collection: any,
+    path: any
+  ): void {
+    const steps = Array.isArray(path) ? path : [path]
+    const finalIndex = steps.length - 1
+    if (finalIndex >= 0) {
+      const targetPath = steps.slice(0, finalIndex)
+      const target = getNestedValue(collection, targetPath)
+      if (typeof target === 'object' && target != null) {
+        const step = steps[finalIndex]
+        if (Array.isArray(target)) {
+          const index = Number(step)
+          if (isNaN(index)) return
+          target.splice(index, 1)
+        } else {
+          const key = String(step)
+          if (key in target) {
+            /* eslint-disable @typescript-eslint/no-dynamic-delete */
+            delete target[key]
+          }
+        }
+      }
+    }
+  }
+}
+
+export const DEFAULT_OBJECT_ACTIONS: TypedActionMap<POJObject> = {
+  untyped: { ...DEFAULT_UNTYPED_CONVERSIONS },
+  conversion: {
+    wrap: new CreateWrapperObjectAction()
+  },
+  typed: {
+    delete: new DeleteNestedValueAction<POJObject>(),
+    omit: new OmitPropertiesAction(),
+    pick: new PickPropertiesAction(),
+    set: new SetNestedValueAction<POJObject>()
+  }
+}
+
+export class ToObjectConvertor extends TypedActionsValueConvertor<POJObject> {
+  readonly clone: (value: any) => any
+
+  constructor (
+    actions: TypedActionMap<POJObject> = DEFAULT_OBJECT_ACTIONS,
+    cloneVia: (value: any) => any = cloneJSON
+  ) {
+    super('object', getObjectFrom, actions)
+    this.clone = cloneVia
+  }
+
+  prepareValue (
+    value: unknown,
+    schema: Partial<TypeConversionSchema>,
+    resolver?: TypeConversionResolver
+  ): unknown {
+    if ('const' in schema && typeof schema.const === 'object') {
+      return this.clone(schema.const)
+    }
+    value = super.prepareValue(value, schema, resolver)
+    if (
+      value == null &&
+      'default' in schema &&
+      typeof schema.default === 'object'
+    ) {
+      value = this.clone(schema.default)
+    }
+    return value
+  }
+
+  finalizeValue (
+    value: POJObject,
+    schema: Partial<TypeConversionSchema>,
+    resolver?: TypeConversionResolver
+  ): POJObject {
+    value = super.finalizeValue(value, schema, resolver)
+    this.applySchemaTo(schema, value, resolver)
+    return value
   }
 
   applySchemaTo (
@@ -186,93 +286,5 @@ export class ModifyObjectPropertiesAction implements TypeConversionAction<POJObj
         target[key] = resolver.convert(target[key], additionalProperties)
       }
     }
-  }
-}
-
-export class SetObjectPropertiesAction extends ModifyObjectPropertiesAction {
-  transform (
-    value: POJObject,
-    options?: JSONObject,
-    resolver?: TypeConversionResolver
-  ): POJObject {
-    if (options != null) {
-      const schema = this.getObjectSchemaFrom(options)
-      if (schema.additionalProperties == null) {
-        schema.additionalProperties = { type: JSTypeName.ANY }
-      }
-      this.applySchemaTo(schema, value, resolver)
-    }
-    return value
-  }
-}
-
-export class CreateWrapperObjectAction implements TypeConversionAction<any, POJObject> {
-  transform (
-    value: any,
-    options?: JSONObject
-  ): POJObject {
-    if (options != null && Array.isArray(options.convert)) {
-      const type = getExtendedTypeOf(value)
-      if (options.convert.includes(type)) {
-        return getObjectFrom(value)
-      }
-    }
-    const key = options?.key != null ? String(options.key) : 'value'
-    return { [key]: value }
-  }
-}
-
-export const DEFAULT_OBJECT_ACTIONS: TypedActionMap<POJObject> = {
-  untyped: { ...DEFAULT_UNTYPED_CONVERSIONS },
-  conversion: {
-    wrap: new CreateWrapperObjectAction()
-  },
-  typed: {
-    modify: new ModifyObjectPropertiesAction(),
-    omit: new OmitPropertiesAction(),
-    pick: new PickPropertiesAction(),
-    set: new SetObjectPropertiesAction()
-  }
-}
-
-export class ToObjectConvertor extends TypedActionsValueConvertor<POJObject> {
-  readonly clone: (value: any) => any
-  readonly mutator: ModifyObjectPropertiesAction = new ModifyObjectPropertiesAction()
-
-  constructor (
-    actions: TypedActionMap<POJObject> = DEFAULT_OBJECT_ACTIONS,
-    cloneVia: (value: any) => any = cloneJSON
-  ) {
-    super('object', getObjectFrom, actions)
-    this.clone = cloneVia
-  }
-
-  prepareValue (
-    value: unknown,
-    schema: Partial<TypeConversionSchema>,
-    resolver?: TypeConversionResolver
-  ): unknown {
-    if ('const' in schema && typeof schema.const === 'object') {
-      return this.clone(schema.const)
-    }
-    value = super.prepareValue(value, schema, resolver)
-    if (
-      value == null &&
-      'default' in schema &&
-      typeof schema.default === 'object'
-    ) {
-      value = this.clone(schema.default)
-    }
-    return value
-  }
-
-  finalizeValue (
-    value: POJObject,
-    schema: Partial<TypeConversionSchema>,
-    resolver?: TypeConversionResolver
-  ): POJObject {
-    value = super.finalizeValue(value, schema, resolver)
-    this.mutator.applySchemaTo(schema, value, resolver)
-    return value
   }
 }

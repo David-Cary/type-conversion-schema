@@ -4,18 +4,15 @@ import {
   type TypeMarkedObject,
   type TypedValueConvertor,
   type TypeConversionResolver,
-  type TypeConversionSchema,
-  removeTypeConversionActionsFrom
+  type TypeConversionSchema
 } from '../schema/conversions'
 import {
-  type BasicJSTypeSchema,
   getTypedArray,
   getExtendedTypeOf,
   stringToJSTypeName
 } from '../schema/JSType'
 import {
-  type JSONObject,
-  cloneJSON
+  type JSONObject
 } from '../schema/JSON'
 
 export function getNestedValue (
@@ -235,24 +232,13 @@ export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<
     return typeof request === 'object' ? request : { type: request }
   }
 
-  createJSTypeSchema (
-    source?: Partial<TypeConversionSchema>,
-    resolver?: TypeConversionResolver
-  ): BasicJSTypeSchema {
-    const schema = cloneJSON(source)
-    schema.type = stringToJSTypeName(this.typeName)
-    this.expandSchema(schema, resolver)
-    removeTypeConversionActionsFrom(schema)
-    return schema as BasicJSTypeSchema
-  }
-
   expandSchema (
     schema: Partial<TypeConversionSchema>,
     resolver?: TypeConversionResolver
   ): void {
     this.prepareSchema(schema, resolver)
     if (schema.convertVia != null) {
-      this.expandSchemaFor(schema, schema.convertVia, resolver)
+      this.expandSchemaFor(schema, schema.convertVia, this.actions.conversion, resolver)
     }
     this.finalizeSchema(schema, resolver)
   }
@@ -263,7 +249,7 @@ export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<
   ): void {
     if (schema.prepare != null) {
       for (const request of schema.prepare) {
-        this.expandSchemaFor(schema, request, resolver)
+        this.expandSchemaFor(schema, request, this.actions.untyped, resolver)
       }
     }
   }
@@ -274,7 +260,7 @@ export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<
   ): void {
     if (schema.finalize != null) {
       for (const request of schema.finalize) {
-        this.expandSchemaFor(schema, request, resolver)
+        this.expandSchemaFor(schema, request, this.actions.typed, resolver)
       }
     }
   }
@@ -282,10 +268,11 @@ export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<
   expandSchemaFor (
     schema: Partial<TypeConversionSchema>,
     request: TypedActionRequest,
+    actionMap: Record<string, TypeConversionAction<any>>,
     resolver?: TypeConversionResolver
   ): void {
     const options = this.expandActionRequest(request)
-    const action = this.actions.untyped[options.type]
+    const action = actionMap[options.type]
     if (action?.expandSchema != null) {
       action.expandSchema(schema, options, resolver)
     }

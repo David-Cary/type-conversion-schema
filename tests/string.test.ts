@@ -1,15 +1,12 @@
 import {
   ToStringConvertor,
-  PadStringAction,
-  StringSliceAction,
-  DateStringAction,
-  JSTypeSchema
+  TypeConversionSchema
 } from "../src/index"
 
 const convertor = new ToStringConvertor()
 
 describe("ToStringConvertor", () => {
-  describe("default action", () => {
+  describe("default value", () => {
     test("should use default value if target value is undefined", () => {
       const value = convertor.convertWith(
         undefined,
@@ -20,7 +17,7 @@ describe("ToStringConvertor", () => {
       expect(value).toBe('x')
     })
   })
-  describe("setTo action", () => {
+  describe("const value", () => {
     test("should override the provided value", () => {
       const value = convertor.convertWith(
         'a',
@@ -101,6 +98,22 @@ describe("ToStringConvertor", () => {
       )
       expect(value).toBe('x-?')
     })
+    test("should set min length when applied to schema", () => {
+      const schema: TypeConversionSchema = {
+        type: 'string',
+        finalize: [
+          {
+            type: 'pad',
+            length: 3
+          }
+        ]
+      }
+      convertor.expandSchema(schema)
+      expect('minLength' in schema).toBe(true)
+      if('minLength' in schema) {
+        expect(schema.minLength).toBe(3)
+      }
+    })
   })
   describe("slice action", () => {
     test("should return a targetted substring", () => {
@@ -117,6 +130,23 @@ describe("ToStringConvertor", () => {
         }
       )
       expect(value).toBe('accoo')
+    })
+    test("should set max length of schema when signs are same", () => {
+      const schema: TypeConversionSchema = {
+        type: 'string',
+        finalize: [
+          {
+            type: 'slice',
+            start: 1,
+            end: 4
+          }
+        ]
+      }
+      convertor.expandSchema(schema)
+      expect('maxLength' in schema).toBe(true)
+      if('maxLength' in schema) {
+        expect(schema.maxLength).toBe(3)
+      }
     })
   })
   describe("replace action", () => {
@@ -218,6 +248,20 @@ describe("ToStringConvertor", () => {
       )
       expect(value).toBe('1/1/1990')
     })
+    test("should format when applied to schema", () => {
+      const schema: TypeConversionSchema = {
+        type: 'string',
+        convertVia: {
+          type: 'date',
+          locales: 'en-US'
+        }
+      }
+      convertor.expandSchema(schema)
+      expect('format' in schema).toBe(true)
+      if('format' in schema) {
+        expect(schema.format).toBe('date')
+      }
+    })
   })
   describe("time", () => {
     test("should convert to time", () => {
@@ -245,53 +289,6 @@ describe("ToStringConvertor", () => {
         }
       )
       expect(value).toBe('1/1/1990, 3:24:00 AM')
-    })
-  })
-})
-
-describe("PadStringAction", () => {
-  const action = new PadStringAction()
-  describe("modifySchema", () => {
-    test("should set minLength", () => {
-      const schema: JSTypeSchema = { type: 'string' }
-      action.modifySchema(schema, { length: 2 })
-      expect(schema.minLength).toBe(2)
-    })
-  })
-})
-
-describe("StringSliceAction", () => {
-  const action = new StringSliceAction()
-  describe("modifySchema", () => {
-    test("should set maxLength if both positions are positive", () => {
-      const schema: JSTypeSchema = { type: 'string' }
-      action.modifySchema(schema, { start: 1, end: 3 })
-      expect(schema.maxLength).toBe(2)
-    })
-  })
-  describe("modifySchema", () => {
-    test("should set maxLength if both positions are negative", () => {
-      const schema: JSTypeSchema = { type: 'string' }
-      action.modifySchema(schema, { start: -3, end: -1 })
-      expect(schema.maxLength).toBe(2)
-    })
-  })
-  describe("modifySchema", () => {
-    test("should not set maxLength if both positions have different signs", () => {
-      const schema: JSTypeSchema = { type: 'string' }
-      action.modifySchema(schema, { start: 1, end: -1 })
-      expect(schema.maxLength).toBeUndefined()
-    })
-  })
-})
-
-describe("DateStringAction", () => {
-  const action = new DateStringAction()
-  describe("modifySchema", () => {
-    test("should set format", () => {
-      const schema: JSTypeSchema = { type: 'string' }
-      action.modifySchema(schema)
-      expect(schema.format).toBe('date')
     })
   })
 })

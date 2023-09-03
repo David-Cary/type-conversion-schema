@@ -1,12 +1,7 @@
 import {
   ToNumberConvertor,
-  RoundNumberAction,
-  NumberToMultipleOfAction,
-  MinimumNumberAction,
-  MaximumNumberAction,
-  PositiveNumberAction,
-  NegativeNumberAction,
-  NumberSchema
+  NumberSchema,
+  TypeConversionSchema
 } from "../src/index"
 
 const convertor = new ToNumberConvertor()
@@ -16,17 +11,12 @@ test("x", ()=> {
 })
 
 describe("ToNumberConvertor", () => {
-  describe("default action", () => {
+  describe("default value", () => {
     test("should use default value if target value does not resolve to a number", () => {
       const value = convertor.convertWith(
         undefined,
         {
-          finalize: [
-            {
-              type: 'default',
-              value: 0
-            }
-          ]
+          default: 0
         }
       )
       expect(value).toBe(0)
@@ -35,60 +25,40 @@ describe("ToNumberConvertor", () => {
       const value = convertor.convertWith(
         '1',
         {
-          finalize: [
-            {
-              type: 'default',
-              value: 0
-            }
-          ]
+          default: 0
         }
       )
       expect(value).toBe(1)
     })
   })
-  describe("setTo action", () => {
+  describe("const value", () => {
     test("should override the provided value", () => {
       const value = convertor.convertWith(
         3,
         {
-          prepare: [
-            {
-              type: 'setTo',
-              value: 0
-            }
-          ]
+          const: 0
         }
       )
       expect(value).toBe(0)
     })
   })
-  describe("max action", () => {
+  describe("maximum value", () => {
     test("should enforce maximum", () => {
       const value = convertor.convertWith(
         3,
         {
-          finalize: [
-            {
-              type: 'max',
-              value: 1
-            }
-          ]
+          maximum: 1
         }
       )
       expect(value).toBe(1)
     })
   })
-  describe("min action", () => {
+  describe("minimum value", () => {
     test("should enforce minimum", () => {
       const value = convertor.convertWith(
         3,
         {
-          finalize: [
-            {
-              type: 'min',
-              value: 4
-            }
-          ]
+          minimum: 4
         }
       )
       expect(value).toBe(4)
@@ -98,6 +68,17 @@ describe("ToNumberConvertor", () => {
     test("should round to nearest integer", () => {
       const value = convertor.convertWith(0.5, { finalize: ['round'] })
       expect(value).toBe(1)
+    })
+    test("should set the number to an integer", () => {
+      const schema: Partial<TypeConversionSchema> = {
+        type: 'number',
+        finalize: ['round']
+      }
+      convertor.expandSchema(schema)
+      expect('integer' in schema).toBe(true)
+      if('integer' in schema) {
+        expect(schema.integer).toBe(true)
+      }
     })
   })
   describe("roundUp action", () => {
@@ -117,133 +98,44 @@ describe("ToNumberConvertor", () => {
       const value = convertor.convertWith(-1, { finalize: ['positive'] })
       expect(value).toBe(1)
     })
+    test("should set the minimum to 0", () => {
+      const schema: Partial<TypeConversionSchema> = {
+        type: 'number',
+        finalize: ['positive']
+      }
+      convertor.expandSchema(schema)
+      expect('minimum' in schema).toBe(true)
+      if('minimum' in schema) {
+        expect(schema.minimum).toBe(0)
+      }
+    })
   })
   describe("negative action", () => {
     test("should flip positive numbers", () => {
       const value = convertor.convertWith(1, { finalize: ['negative'] })
       expect(value).toBe(-1)
     })
+    test("should set the minimum to 0", () => {
+      const schema: Partial<TypeConversionSchema> = {
+        type: 'number',
+        finalize: ['negative']
+      }
+      convertor.expandSchema(schema)
+      expect('maximum' in schema).toBe(true)
+      if('maximum' in schema) {
+        expect(schema.maximum).toBe(0)
+      }
+    })
   })
-  describe("multiple action", () => {
+  describe("multipleOf value", () => {
     test("should force to nearest multiple of target number", () => {
       const value = convertor.convertWith(
         3,
         {
-          finalize: [
-            {
-              type: 'multiple',
-              value: 5
-            }
-          ]
+          multipleOf: 5
         }
       )
       expect(value).toBe(5)
-    })
-    test("if provided an offset, should use that for rounding", () => {
-      const value = convertor.convertWith(
-        8,
-        {
-          finalize: [
-            {
-              type: 'multiple',
-              value: 5,
-              offset: 0
-            }
-          ]
-        }
-      )
-      expect(value).toBe(5)
-    })
-  })
-})
-
-describe("RoundNumberAction", () => {
-  const action = new RoundNumberAction()
-  describe("modifySchema", () => {
-    test("should set as an integer", () => {
-      const schema: NumberSchema = { type: 'number' }
-      action.modifySchema(schema)
-      expect(schema.integer).toBe(true)
-    })
-  })
-})
-
-describe("NumberToMultipleOfAction", () => {
-  const action = new NumberToMultipleOfAction()
-  describe("modifySchema", () => {
-    test("should set to integer if multiple of integer", () => {
-      const schema: NumberSchema = { type: 'number' }
-      action.modifySchema(schema, { value: 5 })
-      expect(schema.integer).toBe(true)
-    })
-    test("should set to not an integer if multiple of non-integer", () => {
-      const schema: NumberSchema = { type: 'number' }
-      action.modifySchema(schema, { value: 0.5 })
-      expect(schema.integer).toBe(false)
-    })
-  })
-})
-
-describe("MinimumNumberAction", () => {
-  const action = new MinimumNumberAction()
-  describe("modifySchema", () => {
-    test("should set minimum value", () => {
-      const schema: NumberSchema = { type: 'number' }
-      action.modifySchema(schema, { value: 5 })
-      expect(schema.minimum).toBe(5)
-    })
-    test("should set fall back to using a number if minimum is non-integer", () => {
-      const schema: NumberSchema = { type: 'number', integer: true }
-      action.modifySchema(schema, { value: 0.5 })
-      expect(schema.integer).toBe(false)
-    })
-  })
-})
-
-describe("MaximumNumberAction", () => {
-  const action = new MaximumNumberAction()
-  describe("modifySchema", () => {
-    test("should set maximum value", () => {
-      const schema: NumberSchema = { type: 'number' }
-      action.modifySchema(schema, { value: 5 })
-      expect(schema.maximum).toBe(5)
-    })
-    test("should set fall back to using a number if minimum is non-integer", () => {
-      const schema: NumberSchema = { type: 'number', integer: true }
-      action.modifySchema(schema, { value: 0.5 })
-      expect(schema.integer).toBe(false)
-    })
-  })
-})
-
-describe("PositiveNumberAction", () => {
-  const action = new PositiveNumberAction()
-  describe("modifySchema", () => {
-    test("should force minimum to 0 if negative", () => {
-      const schema: NumberSchema = { type: 'number', minimum: -1 }
-      action.modifySchema(schema)
-      expect(schema.minimum).toBe(0)
-    })
-    test("should force minimum to 0 if undefined", () => {
-      const schema: NumberSchema = { type: 'number' }
-      action.modifySchema(schema)
-      expect(schema.minimum).toBe(0)
-    })
-  })
-})
-
-describe("NegativeNumberAction", () => {
-  const action = new NegativeNumberAction()
-  describe("modifySchema", () => {
-    test("should force maximum to 0 if positive", () => {
-      const schema: NumberSchema = { type: 'number', minimum: 1 }
-      action.modifySchema(schema)
-      expect(schema.maximum).toBe(0)
-    })
-    test("should force maximum to 0 if undefined", () => {
-      const schema: NumberSchema = { type: 'number' }
-      action.modifySchema(schema)
-      expect(schema.maximum).toBe(0)
     })
   })
 })

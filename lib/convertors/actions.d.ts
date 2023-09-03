@@ -1,5 +1,4 @@
 import { type TypeConversionAction, type TypedActionRequest, type TypeMarkedObject, type TypedValueConvertor, type TypeConversionResolver, type TypeConversionSchema } from '../schema/conversions';
-import { type BasicJSTypeSchema } from '../schema/JSType';
 import { type JSONObject } from '../schema/JSON';
 export declare function getNestedValue(source: any, path: any): any;
 export declare class GetValueAction implements TypeConversionAction {
@@ -31,9 +30,8 @@ export declare class TypedActionsValueConvertor<T = any> implements TypedValueCo
     prepareValue(value: unknown, schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): unknown;
     finalizeValue(value: T, schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): T;
     expandActionRequest(request: TypedActionRequest): TypeMarkedObject;
-    createJSTypeSchema(source?: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): BasicJSTypeSchema;
     expandSchema(schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): void;
     prepareSchema(schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): void;
     finalizeSchema(schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): void;
-    expandSchemaFor(schema: Partial<TypeConversionSchema>, request: TypedActionRequest, resolver?: TypeConversionResolver): void;
+    expandSchemaFor(schema: Partial<TypeConversionSchema>, request: TypedActionRequest, actionMap: Record<string, TypeConversionAction<any>>, resolver?: TypeConversionResolver): void;
 }

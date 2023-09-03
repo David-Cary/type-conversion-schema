@@ -2,7 +2,17 @@ import {
   type JSTypeSchema,
   type AbstractJSTypeSchema,
   type BasicJSTypeSchema,
-  type JSTypeSchemaUnion,
+  type AnySchema,
+  type ArraySchema,
+  type BigIntSchema,
+  type BooleanSchema,
+  type FunctionSchema,
+  type NumberSchema,
+  type NullSchema,
+  type ObjectSchema,
+  type StringSchema,
+  type SymbolSchema,
+  type UndefinedSchema,
   type JSTypeName
 } from './JSType'
 import { type JSONObject } from './JSON'
@@ -19,7 +29,51 @@ export interface TypeConversionCallbacks {
   finalize?: TypedActionRequest[]
 }
 
-export type TypeConversionSchema = BasicJSTypeSchema & TypeConversionCallbacks
+export type BasicTypeConversionSchema = BasicJSTypeSchema & TypeConversionCallbacks
+
+export interface ArrayCreationSchema extends
+  Omit<ArraySchema, 'additionalItems' | 'contains' | 'items' | 'prefixItems'>,
+  TypeConversionCallbacks {
+  additionalItems?: TypeConversionRequest
+  contains?: TypeConversionRequest
+  items?: TypeConversionRequest
+  prefixItems?: TypeConversionRequest[]
+}
+
+export interface FunctionCreationSchema extends
+  Omit<FunctionSchema, 'parameters' | 'optionalParameters' | 'additionalParameters' | 'returns'>,
+  TypeConversionCallbacks {
+  parameters?: TypeConversionRequest[]
+  optionalParameters?: TypeConversionRequest[]
+  additionalParameters?: TypeConversionRequest
+  returns?: TypeConversionRequest
+}
+
+export interface ObjectCreationSchema extends
+  Omit<ObjectSchema, 'additionalProperties' | 'patternProperties' | 'properties'>,
+  TypeConversionCallbacks {
+  additionalProperties?: TypeConversionRequest
+  patternProperties?: Record<string, TypeConversionRequest>
+  properties?: Record<string, TypeConversionRequest>
+}
+
+export type TypeConversionSchema = (
+  (
+    (
+      AnySchema |
+      BigIntSchema |
+      BooleanSchema |
+      NumberSchema |
+      NullSchema |
+      StringSchema |
+      SymbolSchema |
+      UndefinedSchema
+    ) & TypeConversionCallbacks
+  ) |
+  ArrayCreationSchema |
+  FunctionCreationSchema |
+  ObjectCreationSchema
+)
 
 export interface TypeConversionSchemaUnion extends AbstractJSTypeSchema {
   anyOf: Array<TypeConversionSchema | JSTypeName>
@@ -54,6 +108,90 @@ export function removeTypeConversionActionsFrom (
   }
 }
 
+export function typeConversionToJSTypeSchema (
+  request: TypeConversionRequest
+): JSTypeSchema {
+  if (typeof request === 'string') {
+    return { type: request }
+  }
+  const schema: Record<string, any> = { ...request }
+  if ('type' in request) {
+    removeTypeConversionActionsFrom(schema as TypeConversionSchema)
+    switch (request.type) {
+      case 'array': {
+        if (request.additionalItems != null) {
+          schema.additionalItems = typeConversionToJSTypeSchema(request.additionalItems)
+        }
+        if (request.contains != null) {
+          schema.contains = typeConversionToJSTypeSchema(request.contains)
+        }
+        if (request.items != null) {
+          schema.items = typeConversionToJSTypeSchema(request.items)
+        }
+        if (request.prefixItems != null) {
+          schema.prefixItems = request.prefixItems.map(
+            item => typeConversionToJSTypeSchema(item)
+          )
+        }
+        break
+      }
+      case 'function': {
+        if (request.parameters != null) {
+          schema.parameters = request.parameters.map(
+            item => typeConversionToJSTypeSchema(item)
+          )
+        }
+        if (request.optionalParameters != null) {
+          schema.optionalParameters = request.optionalParameters.map(
+            item => typeConversionToJSTypeSchema(item)
+          )
+        }
+        if (request.additionalParameters != null) {
+          schema.additionalParameters = typeConversionToJSTypeSchema(request.additionalParameters)
+        }
+        if (request.returns != null) {
+          schema.returns = typeConversionToJSTypeSchema(request.returns)
+        }
+        break
+      }
+      case 'object': {
+        if (request.additionalProperties != null) {
+          schema.additionalProperties = typeConversionToJSTypeSchema(request.additionalProperties)
+        }
+        if (request.patternProperties != null) {
+          schema.patternProperties = convertRecordValues(
+            request.patternProperties,
+            typeConversionToJSTypeSchema
+          )
+        }
+        if (request.properties != null) {
+          schema.properties = convertRecordValues(
+            request.properties,
+            typeConversionToJSTypeSchema
+          )
+        }
+        break
+      }
+    }
+  } else {
+    schema.anyOf = request.anyOf.map(
+      option => typeConversionToJSTypeSchema(option)
+    )
+  }
+  return schema as JSTypeSchema
+}
+
+export function convertRecordValues<F, T> (
+  source: Record<string, F>,
+  convert: (value: F) => T
+): Record<string, T> {
+  const results: Record<string, T> = {}
+  for (const key in source) {
+    results[key] = convert(source[key])
+  }
+  return results
+}
+
 export interface TypeConversionAction<F = any, T = F> {
   transform: (
     value: F,
@@ -79,10 +217,6 @@ export interface TypedValueConvertor<T = any> {
     schema: Partial<TypeConversionSchema>,
     resolver?: TypeConversionResolver
   ) => void
-  createJSTypeSchema: (
-    source?: Partial<TypeConversionSchema>,
-    resolver?: TypeConversionResolver
-  ) => BasicJSTypeSchema
 }
 
 export class TypeConversionResolver {
@@ -150,31 +284,5 @@ export class TypeConversionResolver {
       convertor.expandSchema(schema, this)
     }
     return schema
-  }
-
-  createJSTypeSchema (source: TypeConversionRequest): JSTypeSchema | undefined {
-    if (typeof source === 'object') {
-      if ('anyOf' in source) {
-        const union: JSTypeSchemaUnion = {
-          anyOf: []
-        }
-        for (const item of source.anyOf) {
-          const subschema = this.createJSTypeSchema(item)
-          if (subschema != null && 'type' in subschema) {
-            union.anyOf.push(subschema)
-          }
-        }
-        return union
-      }
-      const sourceSchema = typeof source === 'object' ? source : { type: source }
-      if (sourceSchema != null) {
-        const convertor = this.convertors[sourceSchema.type]
-        if (convertor != null) {
-          return convertor.createJSTypeSchema(sourceSchema, this)
-        }
-      }
-    } else {
-      return this.createJSTypeSchema({ type: source })
-    }
   }
 }
