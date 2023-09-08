@@ -4,7 +4,8 @@ import {
   type TypeMarkedObject,
   type TypedValueConvertor,
   type TypeConversionResolver,
-  type TypeConversionSchema
+  type TypeConversionSchema,
+  type TypeConversionContext
 } from '../schema/conversions'
 import {
   getTypedArray,
@@ -176,9 +177,10 @@ export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<
   convertWith (
     value: unknown,
     schema: Partial<TypeConversionSchema>,
-    resolver?: TypeConversionResolver
+    resolver?: TypeConversionResolver,
+    context?: TypeConversionContext
   ): T {
-    const untypedResult = this.prepareValue(value, schema, resolver)
+    const untypedResult = this.prepareValue(value, schema, resolver, context)
     let schemaConversion: T | undefined
     if (schema.convertVia != null) {
       const options = this.expandActionRequest(schema.convertVia)
@@ -190,14 +192,15 @@ export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<
     let typedResult = schemaConversion != null
       ? schemaConversion
       : this.convert(untypedResult)
-    typedResult = this.finalizeValue(typedResult, schema, resolver)
+    typedResult = this.finalizeValue(typedResult, schema, resolver, context)
     return typedResult
   }
 
   prepareValue (
     value: unknown,
     schema: Partial<TypeConversionSchema>,
-    resolver?: TypeConversionResolver
+    resolver?: TypeConversionResolver,
+    context?: TypeConversionContext
   ): unknown {
     if (schema.prepare != null) {
       for (const request of schema.prepare) {
@@ -214,7 +217,8 @@ export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<
   finalizeValue (
     value: T,
     schema: Partial<TypeConversionSchema>,
-    resolver?: TypeConversionResolver
+    resolver?: TypeConversionResolver,
+    context?: TypeConversionContext
   ): T {
     if (schema.finalize != null) {
       for (const request of schema.finalize) {

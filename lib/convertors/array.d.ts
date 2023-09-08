@@ -11,7 +11,7 @@ export declare class ParseArrayStringAction implements TypeConversionAction<any,
 export declare class InsertArrayItemAction implements TypeConversionAction<any[]> {
     transform(value: any[], options?: JSONObject): any[];
 }
-export declare class RemoveArrayItemAction implements TypeConversionAction<any[]> {
+export declare class DeleteArrayItemAction implements TypeConversionAction<any[]> {
     transform(value: any[], options?: JSONObject): any[];
 }
 export declare const DEFAULT_ARRAY_ACTIONS: TypedActionMap<any[]>;

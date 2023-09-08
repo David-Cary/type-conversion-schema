@@ -282,4 +282,20 @@ describe("ToArrayConvertor", () => {
     )
     expect(value).toEqual([{ y: 0 }])
   })
+  test("should apply definitions", () => {
+    const value = convertor.convertWith(
+      [ 0, -1, '-2'],
+      {
+        items: { $ref: '#/$defs/positive' },
+        $defs: {
+          positive: {
+            type: JSTypeName.NUMBER,
+            finalize: ['positive']
+          }
+        }
+      },
+      resolver
+    )
+    expect(value).toEqual([0, 1, 2])
+  })
 })

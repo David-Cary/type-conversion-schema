@@ -1,7 +1,8 @@
 import {
   type TypeConversionAction,
   type TypeConversionResolver,
-  type TypeConversionSchema
+  type TypeConversionSchema,
+  type TypeConversionContext
 } from '../schema/conversions'
 import { type JSONObject } from '../schema/JSON'
 import {
@@ -241,24 +242,36 @@ export class ToObjectConvertor extends TypedActionsValueConvertor<POJObject> {
   finalizeValue (
     value: POJObject,
     schema: Partial<TypeConversionSchema>,
-    resolver?: TypeConversionResolver
+    resolver?: TypeConversionResolver,
+    context?: TypeConversionContext
   ): POJObject {
-    value = super.finalizeValue(value, schema, resolver)
-    this.applySchemaTo(schema, value, resolver)
+    value = super.finalizeValue(value, schema, resolver, context)
+    this.applySchemaTo(schema, value, resolver, context)
     return value
   }
 
   applySchemaTo (
     schema: Partial<TypeConversionSchema>,
     target: POJObject,
-    resolver?: TypeConversionResolver
+    resolver?: TypeConversionResolver,
+    context?: TypeConversionContext
   ): void {
     const properties = ('properties' in schema && schema.properties != null)
       ? schema.properties
       : {}
+    let childContext = context
     if (resolver != null) {
+      const fullSchema = Object.assign(
+        { type: 'object' },
+        schema
+      )
+      childContext = resolver.getChildContext(fullSchema, context)
       for (const key in properties) {
-        target[key] = resolver.convert(target[key], properties[key])
+        target[key] = resolver.convert(
+          target[key],
+          properties[key],
+          childContext
+        )
       }
     }
     const additionalProperties = ('additionalProperties' in schema)
@@ -278,12 +291,20 @@ export class ToObjectConvertor extends TypedActionsValueConvertor<POJObject> {
           const exp = new RegExp(pattern)
           patternMatched = exp.test(key)
           if (patternMatched) {
-            target[key] = resolver.convert(target[key], patternProperties[pattern])
+            target[key] = resolver.convert(
+              target[key],
+              patternProperties[pattern],
+              childContext
+            )
             break
           }
         }
         if (patternMatched) continue
-        target[key] = resolver.convert(target[key], additionalProperties)
+        target[key] = resolver.convert(
+          target[key],
+          additionalProperties,
+          childContext
+        )
       }
     }
   }

@@ -243,4 +243,23 @@ describe("ToObjectConvertor", () => {
     )
     expect(value).toEqual({ x: 1 })
   })
+  test("should apply definitions", () => {
+    const value = convertor.convertWith(
+      { abs: -1, neg: -1 },
+      {
+        properties: {
+          abs: { $ref: '#/$defs/positive' }
+        },
+        additionalProperties: JSTypeName.ANY,
+        $defs: {
+          positive: {
+            type: JSTypeName.NUMBER,
+            finalize: ['positive']
+          }
+        }
+      },
+      resolver
+    )
+    expect(value).toEqual({ abs: 1, neg: -1 })
+  })
 })

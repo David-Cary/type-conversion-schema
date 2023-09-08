@@ -1,7 +1,8 @@
 import {
   type TypeConversionAction,
   type TypeConversionResolver,
-  type TypeConversionSchema
+  type TypeConversionSchema,
+  type TypeConversionContext
 } from '../schema/conversions'
 import {
   type JSONObject,
@@ -33,7 +34,7 @@ export class CopyArrayAction implements TypeConversionAction<any[]> {
       const start = 'from' in options ? Number(options.from) : 0
       if ('to' in options) {
         const toPosition = Number(options.to)
-        if (toPosition != -1) {
+        if (toPosition !== -1) {
           const end = toPosition + 1
           return value.slice(start, end)
         }
@@ -68,7 +69,7 @@ export class InsertArrayItemAction implements TypeConversionAction<any[]> {
   ): any[] {
     let index = value.length
     let repeat = 1
-    let itemValue: any = undefined
+    let itemValue: any
     if (options != null) {
       if ('index' in options) {
         index = Number(options.index)
@@ -153,23 +154,36 @@ export class ToArrayConvertor extends TypedActionsValueConvertor<any[]> {
   finalizeValue (
     value: any[],
     schema: Partial<TypeConversionSchema>,
-    resolver?: TypeConversionResolver
+    resolver?: TypeConversionResolver,
+    context?: TypeConversionContext
   ): any[] {
-    value = super.finalizeValue(value, schema, resolver)
-    this.applySchemaTo(schema, value, resolver)
+    value = super.finalizeValue(value, schema, resolver, context)
+    this.applySchemaTo(schema, value, resolver, context)
     return value
   }
 
   applySchemaTo (
     schema: Partial<TypeConversionSchema>,
     target: any[],
-    resolver?: TypeConversionResolver
+    resolver?: TypeConversionResolver,
+    context?: TypeConversionContext
   ): void {
     let prefixCount = 0
+    const fullSchema = Object.assign(
+      { type: 'array' },
+      schema
+    )
+    let itemContext = resolver != null
+      ? resolver.getChildContext(fullSchema, context)
+      : context
     if ('prefixItems' in schema && schema.prefixItems != null) {
       if (resolver != null) {
         for (let i = 0; i < schema.prefixItems.length; i++) {
-          target[i] = resolver.convert(target[i], schema.prefixItems[i])
+          target[i] = resolver.convert(
+            target[i],
+            schema.prefixItems[i],
+            itemContext
+          )
         }
       }
       prefixCount = schema.prefixItems.length
@@ -190,7 +204,11 @@ export class ToArrayConvertor extends TypedActionsValueConvertor<any[]> {
       }
       if (resolver != null) {
         for (let i = target.length - 1; i >= prefixCount; i--) {
-          target[i] = resolver.convert(target[i], schema.items)
+          target[i] = resolver.convert(
+            target[i],
+            schema.items,
+            itemContext
+          )
         }
       }
       if (uniqueItems) {

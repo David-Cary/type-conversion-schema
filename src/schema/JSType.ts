@@ -1,13 +1,18 @@
 import { type JSONSchema } from 'json-schema-typed'
 
+/**
+ * Covers the basic properties shared by all javascript type schemas.
+ * These mirror the properties common to all JSON schema objects.
+ * @interface
+ */
 export interface AbstractJSTypeSchema {
   $comment?: string
   $id?: string
-  $ref?: string
+  $defs?: Record<string, BasicJSTypeSchema | JSTypeSchemaUnion>
   $schema?: string
+  $anchor?: string
   description?: string
   title?: string
-  definitions?: Record<string, JSTypeSchema>
 }
 
 export interface TypedJSTypeSchema extends AbstractJSTypeSchema {
@@ -141,7 +146,15 @@ export interface JSTypeSchemaUnion extends AbstractJSTypeSchema {
   anyOf: BasicJSTypeSchema[]
 }
 
-export type JSTypeSchema = BasicJSTypeSchema | JSTypeSchemaUnion
+export interface JSTypeSchemaReference {
+  $ref: string
+}
+
+export type JSTypeSchema = (
+  BasicJSTypeSchema |
+  JSTypeSchemaUnion |
+  JSTypeSchemaReference
+)
 
 export const JSON_SCHEMA_TYPE_NAMES = [
   'string',
@@ -259,17 +272,21 @@ export function initJSONSchema (
   source: JSTypeSchema,
   schema: JSONSchemaObject
 ): void {
-  if (source.$comment != null) schema.$comment = source.$comment
-  if (source.$id != null) schema.$id = source.$id
-  if (source.$ref != null) schema.$ref = source.$ref
-  if (source.$schema != null) schema.$schema = source.$schema
-  if (source.description != null) schema.description = source.description
-  if (source.title != null) schema.title = source.title
-  if (source.definitions != null) {
-    schema.definitions = getTypedValueRecord(
-      source.definitions,
-      item => JSTypeToJSONSchema(item)
-    )
+  if ('$ref' in source) {
+    schema.$ref = source.$ref
+  } else {
+    if (source.$comment != null) schema.$comment = source.$comment
+    if (source.$id != null) schema.$id = source.$id
+    if (source.$schema != null) schema.$schema = source.$schema
+    if (source.$anchor != null) schema.$anchor = source.$anchor
+    if (source.description != null) schema.description = source.description
+    if (source.title != null) schema.title = source.title
+    if (source.$defs != null) {
+      schema.$defs = getTypedValueRecord(
+        source.$defs,
+        item => JSTypeToJSONSchema(item)
+      )
+    }
   }
 }
 

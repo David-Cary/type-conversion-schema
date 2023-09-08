@@ -1,4 +1,4 @@
-import { type TypeConversionAction, type TypeConversionResolver, type TypeConversionSchema } from '../schema/conversions';
+import { type TypeConversionAction, type TypeConversionResolver, type TypeConversionSchema, type TypeConversionContext } from '../schema/conversions';
 import { type JSONObject } from '../schema/JSON';
 import { TypedActionsValueConvertor, type TypedActionMap } from './actions';
 export type POJObject = Record<string, unknown>;
@@ -26,6 +26,6 @@ export declare class ToObjectConvertor extends TypedActionsValueConvertor<POJObj
     readonly clone: (value: any) => any;
     constructor(actions?: TypedActionMap<POJObject>, cloneVia?: (value: any) => any);
     prepareValue(value: unknown, schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): unknown;
-    finalizeValue(value: POJObject, schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): POJObject;
-    applySchemaTo(schema: Partial<TypeConversionSchema>, target: POJObject, resolver?: TypeConversionResolver): void;
+    finalizeValue(value: POJObject, schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver, context?: TypeConversionContext): POJObject;
+    applySchemaTo(schema: Partial<TypeConversionSchema>, target: POJObject, resolver?: TypeConversionResolver, context?: TypeConversionContext): void;
 }

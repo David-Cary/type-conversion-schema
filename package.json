@@ -19,6 +19,7 @@
     "test-bigint": "jest tests/bigint.test.ts",
     "test-symbol": "jest tests/symbol.test.ts",
     "test-function": "jest tests/function.test.ts",
+    "test-resolver": "jest tests/resolver.test.ts",
     "build": "tsc"
   },
   "keywords": [

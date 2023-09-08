@@ -1,12 +1,17 @@
 import { type JSONSchema } from 'json-schema-typed';
+/**
+ * Covers the basic properties shared by all javascript type schemas.
+ * These mirror the properties common to all JSON schema objects.
+ * @interface
+ */
 export interface AbstractJSTypeSchema {
     $comment?: string;
     $id?: string;
-    $ref?: string;
+    $defs?: Record<string, BasicJSTypeSchema | JSTypeSchemaUnion>;
     $schema?: string;
+    $anchor?: string;
     description?: string;
     title?: string;
-    definitions?: Record<string, JSTypeSchema>;
 }
 export interface TypedJSTypeSchema extends AbstractJSTypeSchema {
     type: string;
@@ -101,7 +106,10 @@ export type BasicJSTypeSchema = (AnySchema | ArraySchema | BigIntSchema | Boolea
 export interface JSTypeSchemaUnion extends AbstractJSTypeSchema {
     anyOf: BasicJSTypeSchema[];
 }
-export type JSTypeSchema = BasicJSTypeSchema | JSTypeSchemaUnion;
+export interface JSTypeSchemaReference {
+    $ref: string;
+}
+export type JSTypeSchema = (BasicJSTypeSchema | JSTypeSchemaUnion | JSTypeSchemaReference);
 export declare const JSON_SCHEMA_TYPE_NAMES: string[];
 export declare function JSTypeToJSONSchema(source: JSTypeSchema): JSONSchema | undefined;
 export type JSONSchemaObject = Exclude<JSONSchema, boolean>;
