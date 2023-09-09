@@ -1,4 +1,4 @@
-import { type TypeConversionAction, type TypeConversionResolver, type TypeConversionSchema } from '../schema/conversions';
+import { type TypeConversionAction, type TypeConversionResolver, type TypeConversionSchema, type TypeConversionContext } from '../schema/conversions';
 import { type JSONObject } from '../schema/JSON';
 import { TypedActionsValueConvertor, type TypedActionMap } from './actions';
 export declare function getArrayFrom(source: unknown): any[];
@@ -18,6 +18,6 @@ export declare const DEFAULT_ARRAY_ACTIONS: TypedActionMap<any[]>;
 export declare class ToArrayConvertor extends TypedActionsValueConvertor<any[]> {
     constructor(actions?: TypedActionMap<any[]>);
     prepareValue(value: unknown, schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): unknown;
-    finalizeValue(value: any[], schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver): any[];
-    applySchemaTo(schema: Partial<TypeConversionSchema>, target: any[], resolver?: TypeConversionResolver): void;
+    finalizeValue(value: any[], schema: Partial<TypeConversionSchema>, resolver?: TypeConversionResolver, context?: TypeConversionContext): any[];
+    applySchemaTo(schema: Partial<TypeConversionSchema>, target: any[], resolver?: TypeConversionResolver, context?: TypeConversionContext): void;
 }

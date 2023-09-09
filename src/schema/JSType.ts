@@ -15,16 +15,30 @@ export interface AbstractJSTypeSchema {
   title?: string
 }
 
+/**
+ * Adds typing to a javascript type schema.
+ * This should be extended by every such schema save union shemas.
+ * @interface
+ */
 export interface TypedJSTypeSchema extends AbstractJSTypeSchema {
   type: string
 }
 
+/**
+ * This adds properties for schemas that can have multiple values.
+ * As such it's used for most schemas that aren't fixed values like null and undefined.
+ * @interface
+ */
 export interface VariedJSTypeSchema<T> extends TypedJSTypeSchema {
   default?: T
   examples?: T[]
   const?: T
 }
 
+/**
+ * Covers numeric javascript values (number and big int).
+ * @interface
+ */
 export interface NumericJSTypeSchema<T> extends VariedJSTypeSchema<T> {
   integer?: boolean
   exclusiveMaximum?: T
@@ -34,10 +48,19 @@ export interface NumericJSTypeSchema<T> extends VariedJSTypeSchema<T> {
   multipleOf?: T
 }
 
+/**
+ * Acts as a wildcard for values with no typing or where the type is unknown.
+ * This makes it equivalent to "true" in a JSON schema.
+ * @interface
+ */
 export interface AnySchema extends VariedJSTypeSchema<any> {
   type: 'any'
 }
 
+/**
+ * Adds JSON schema array properties to a javascript type schema.
+ * @interface
+ */
 export interface ArraySchema<T = any> extends VariedJSTypeSchema<T[]> {
   type: 'array'
   additionalItems?: JSTypeSchema
@@ -49,15 +72,28 @@ export interface ArraySchema<T = any> extends VariedJSTypeSchema<T[]> {
   uniqueItems?: boolean
 }
 
+/**
+ * Javascript type schema for big integers.
+ * @interface
+ */
 export interface BigIntSchema extends NumericJSTypeSchema<bigint> {
   type: 'bigint'
 }
 
+/**
+ * Javascript type schema for boolean values.
+ * @interface
+ */
 export interface BooleanSchema extends VariedJSTypeSchema<boolean> {
   type: 'boolean'
 }
+
 export type AnyFunction = () => any
 
+/**
+ * Javascript type schema for functions.
+ * @interface
+ */
 export interface FunctionSchema extends VariedJSTypeSchema<AnyFunction> {
   type: 'function'
   parameters?: JSTypeSchema[]
@@ -66,6 +102,10 @@ export interface FunctionSchema extends VariedJSTypeSchema<AnyFunction> {
   returns?: JSTypeSchema
 }
 
+/**
+ * Adds JSON schema object properties to a javascript type schema.
+ * @interface
+ */
 export interface ObjectSchema extends VariedJSTypeSchema<object> {
   type: 'object'
   additionalProperties?: JSTypeSchema
@@ -77,10 +117,18 @@ export interface ObjectSchema extends VariedJSTypeSchema<object> {
   required?: string[]
 }
 
+/**
+ * Javascript type schema for numbers.
+ * @interface
+ */
 export interface NullSchema extends TypedJSTypeSchema {
   type: 'null'
 }
 
+/**
+ * Javascript type schema for null values.
+ * @interface
+ */
 export interface NumberSchema extends NumericJSTypeSchema<number> {
   type: 'number'
 }
@@ -95,6 +143,10 @@ export type JSONSchemaContentEncoding = (
   'x-token'
 )
 
+/**
+ * Adds JSON schema string properties to a javascript type schema.
+ * @interface
+ */
 export interface StringSchema extends VariedJSTypeSchema<string> {
   type: 'string'
   contentEncoding?: JSONSchemaContentEncoding
@@ -105,11 +157,19 @@ export interface StringSchema extends VariedJSTypeSchema<string> {
   pattern?: string
 }
 
+/**
+ * Javascript type schema for symbols.
+ * @interface
+ */
 export interface SymbolSchema extends TypedJSTypeSchema {
   type: 'symbol'
   key?: string
 }
 
+/**
+ * Javascript type schema for undefined values.
+ * @interface
+ */
 export interface UndefinedSchema extends TypedJSTypeSchema {
   type: 'undefined'
 }
@@ -128,6 +188,10 @@ export enum JSTypeName {
   UNDEFINED = 'undefined'
 }
 
+/**
+ * Covers all javascript type schemas with a specific type (including any).
+ * @type {object}
+ */
 export type BasicJSTypeSchema = (
   AnySchema |
   ArraySchema |
@@ -142,14 +206,26 @@ export type BasicJSTypeSchema = (
   UndefinedSchema
 )
 
+/**
+ * Covers javascript type schemas with multiple valid sub-types.
+ * @interface
+ */
 export interface JSTypeSchemaUnion extends AbstractJSTypeSchema {
   anyOf: BasicJSTypeSchema[]
 }
 
+/**
+ * Used to implement JSON schema style references within a javascript type schema.
+ * @interface
+ */
 export interface JSTypeSchemaReference {
   $ref: string
 }
 
+/**
+ * Covers all valid objects within a javascript type schema.
+ * @type
+ */
 export type JSTypeSchema = (
   BasicJSTypeSchema |
   JSTypeSchemaUnion |
@@ -166,6 +242,12 @@ export const JSON_SCHEMA_TYPE_NAMES = [
   'null'
 ]
 
+/**
+ * Tries to convert a javascript type schema to a JSON shema.
+ * @function
+ * @param {JSTypeSchema} source - javascript type schema to be coverted.
+ * @returns {JSONSchema | undefined} resulting JSON schema, provided such a conversion is possible
+ */
 export function JSTypeToJSONSchema (source: JSTypeSchema): JSONSchema | undefined {
   const schema: JSONSchema = {}
   if ('type' in source) {
@@ -268,6 +350,12 @@ export function JSTypeToJSONSchema (source: JSTypeSchema): JSONSchema | undefine
 
 export type JSONSchemaObject = Exclude<JSONSchema, boolean>
 
+/**
+ * Copies AbstractJSTypeSchema properties onto a JSON schema.
+ * @function
+ * @param {JSTypeSchema} source - javascript type schema we're copying
+ * @param {JSONSchemaObject} shema - JSON schema we're modifying
+ */
 export function initJSONSchema (
   source: JSTypeSchema,
   schema: JSONSchemaObject
@@ -290,6 +378,12 @@ export function initJSONSchema (
   }
 }
 
+/**
+ * Copies VariedJSTypeSchema specific properties onto a JSON schema.
+ * @function
+ * @param {JSTypeSchema} source - javascript type schema we're copying
+ * @param {JSONSchemaObject} shema - JSON schema we're modifying
+ */
 export function initTypedJSONSchema<T> (
   source: VariedJSTypeSchema<T>,
   schema: JSONSchemaObject
@@ -299,6 +393,14 @@ export function initTypedJSONSchema<T> (
   if ('const' in source) schema.const = source.const
 }
 
+/**
+ * Tries to map array items to a new type while filtering out null/undefined values.
+ * @template F, T
+ * @function
+ * @param {F[]} source - items to be converted
+ * @param {(value: F) => T | undefined} convert - callback used to perform conversions
+ * @returns {JSONSchema} list of successfully converted items.
+ */
 export function getTypedArray<F, T=F> (
   source: F[],
   convert: (value: F) => T | undefined
@@ -313,6 +415,14 @@ export function getTypedArray<F, T=F> (
   return results
 }
 
+/**
+ * Tries to map object values to a new type while filtering out null/undefined values.
+ * @template F, T
+ * @function
+ * @param {F[]} source - object to be converted
+ * @param {(value: F) => T | undefined} convert - callback used to perform conversions
+ * @returns {JSONSchema} map of successfully converted values.
+ */
 export function getTypedValueRecord<F, T=F> (
   source: Record<string, F>,
   convert: (value: F) => T | undefined
@@ -328,21 +438,40 @@ export function getTypedValueRecord<F, T=F> (
   return results
 }
 
+/**
+ * Acts as variant of 'typeof' with special handling for null values and arrays.
+ * @function
+ * @param {any} value - value to be evaluated
+ * @returns {JSTypeName} valid type name for the provided value
+ */
 export function getExtendedTypeOf (value: any): JSTypeName {
   if (value === null) return JSTypeName.NULL
   if (Array.isArray(value)) return JSTypeName.ARRAY
   return typeof value as JSTypeName
 }
 
+/**
+ * Creates a javascript type shema from a type name.
+ * @function
+ * @param {JSTypeName} type - type name to be used
+ * @returns {JSONSchema} resulting javascript type schema
+ */
 export function createBasicSchema (type: JSTypeName): BasicJSTypeSchema {
   const schema = { type }
   return schema as BasicJSTypeSchema
 }
 
+/**
+ * Converts a string to it's corresponding javascript type name, defaulting to 'any'.
+ * @function
+ * @param {string} source - type string to be converted
+ * @returns {JSONSchema} the provided string if it was a valid type or 'any' if it wasn't
+ */
 export function stringToJSTypeName (source: string): JSTypeName {
+  const cased = source.toLowerCase()
   for (const key in JSTypeName) {
     const value = (JSTypeName as Record<string, JSTypeName>)[key]
-    if (value === source) return value
+    if (value === cased) return value
   }
   return JSTypeName.ANY
 }
