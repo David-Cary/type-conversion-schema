@@ -44,7 +44,7 @@ export interface NumericJSTypeSchema<T> extends VariedJSTypeSchema<T> {
     multipleOf?: T;
 }
 /**
- * Acts as a wildcard for values with no typing or where the type is unknow.
+ * Acts as a wildcard for values with no typing or where the type is unknown.
  * This makes it equivalent to "true" in a JSON schema.
  * @interface
  */
@@ -162,7 +162,7 @@ export declare enum JSTypeName {
     UNDEFINED = "undefined"
 }
 /**
- * Cover all javascript type schemas with a specific type (including any).
+ * Covers all javascript type schemas with a specific type (including any).
  * @type {object}
  */
 export type BasicJSTypeSchema = (AnySchema | ArraySchema | BigIntSchema | BooleanSchema | FunctionSchema | NumberSchema | NullSchema | ObjectSchema | StringSchema | SymbolSchema | UndefinedSchema);
@@ -187,10 +187,10 @@ export interface JSTypeSchemaReference {
 export type JSTypeSchema = (BasicJSTypeSchema | JSTypeSchemaUnion | JSTypeSchemaReference);
 export declare const JSON_SCHEMA_TYPE_NAMES: string[];
 /**
- * Converts a javascript type schema to a JSON shema.
+ * Tries to convert a javascript type schema to a JSON shema.
  * @function
  * @param {JSTypeSchema} source - javascript type schema to be coverted.
- * @returns {JSONSchema} resulting JSON schema, provided such a conversion is possible
+ * @returns {JSONSchema | undefined} resulting JSON schema, provided such a conversion is possible
  */
 export declare function JSTypeToJSONSchema(source: JSTypeSchema): JSONSchema | undefined;
 export type JSONSchemaObject = Exclude<JSONSchema, boolean>;

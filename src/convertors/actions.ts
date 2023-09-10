@@ -16,6 +16,13 @@ import {
   type JSONObject
 } from '../schema/JSON'
 
+/**
+ * Retries a nested property value for a given path.
+ * @function
+ * @param {amy} source - object the value should be drawn from
+ * @param {any} path - key or array of keys to use to get the value
+ * @returns {any} retrieved value, if any
+ */
 export function getNestedValue (
   source: any,
   path: any
@@ -41,6 +48,11 @@ export function getNestedValue (
   return source
 }
 
+/**
+ * Handles redirecting to a nested value for the next step of a value conversion.
+ * @class
+ * @implements {TypeConversionAction}
+ */
 export class GetValueAction implements TypeConversionAction {
   transform (
     value: any,
@@ -73,6 +85,12 @@ export function getActionRequestFrom (
   }
 }
 
+/**
+ * Extracts a type convesion schema from the provided value.
+ * @function
+ * @param {any} source - value to draw the schema from
+ * @returns {TypeConversionSchema | undefined} target schema, if any
+ */
 export function getConversionSchemaFrom (source: any): TypeConversionSchema | undefined {
   switch (typeof source) {
     case 'string': {
@@ -105,6 +123,11 @@ export function getConversionSchemaFrom (source: any): TypeConversionSchema | un
   }
 }
 
+/**
+ * Applies a conversion schema to the current value before passing it on the next action.
+ * @class
+ * @implements {TypeConversionAction}
+ */
 export class NestedConversionAction implements TypeConversionAction {
   transform (
     value: any,
@@ -135,22 +158,38 @@ export class NestedConversionAction implements TypeConversionAction {
   }
 }
 
+/**
+ * Provides default conversion action handles for untyped values.
+ * @const
+ */
 export const DEFAULT_UNTYPED_CONVERSIONS = {
   convert: new NestedConversionAction(),
   get: new GetValueAction()
 }
 
+/**
+ * Provides conversion action handlers, grouped by whether it's applied before, after, or during conversion.
+ * @template T
+ * @interface
+ * @property {Record<string, TypeConversionAction<T>>} typed - actions to be performed after the type is set
+ * @property {Record<string, TypeConversionAction<any>>} untyped - actions to be performed before the type is set
+ * @property {Record<string, TypeConversionAction<any, T>>} typed - actions to be used to set the type
+ */
 export interface TypedActionMap<T> {
   typed: Record<string, TypeConversionAction<T>>
   untyped: Record<string, TypeConversionAction<any>>
   conversion: Record<string, TypeConversionAction<any, T>>
 }
 
-export type VisitActionCallback<F, T = F> = (
-  action: TypeConversionAction<F, T>,
-  options?: JSONObject
-) => void
-
+/**
+ * Handles conversion of a given value to a variety of types depending on the provided schema.
+ * @template T
+ * @class
+ * @implements {TypedValueConvertor<T>}
+ * @property {string} typeName - associated javascript schema type name
+ * @property {(value: unknown) => T} convert - default function for conversion to the target type
+ * @property {TypedActionMap<T>} actions - map of action resolution handlers
+ */
 export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<T> {
   readonly typeName: string
   readonly convert: (value: unknown) => T
@@ -196,6 +235,15 @@ export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<
     return typedResult
   }
 
+  /**
+   * Applies pre-conversion actions to the provided value.
+   * @function
+   * @param {unknown} value - value to be modified
+   * @param {Partial<TypeConversionSchema>} schema - schema to be used for conversion
+   * @param TypeConversionResolver | undefined} resolver - conversion resolver to be used on nested values
+   * @param {TypeConversionContext | undefined} context - additional values to be used for resolving references
+   * @returns {unknown} modified value
+   */
   prepareValue (
     value: unknown,
     schema: Partial<TypeConversionSchema>,
@@ -214,6 +262,15 @@ export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<
     return value
   }
 
+  /**
+   * Applies post-conversion actions to the provided value.
+   * @function
+   * @param {unknown} value - value to be modified
+   * @param {Partial<TypeConversionSchema>} schema - schema to be used for conversion
+   * @param TypeConversionResolver | undefined} resolver - conversion resolver to be used on nested values
+   * @param {TypeConversionContext | undefined} context - additional values to be used for resolving references
+   * @returns {unknown} modified value
+   */
   finalizeValue (
     value: T,
     schema: Partial<TypeConversionSchema>,
@@ -247,6 +304,12 @@ export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<
     this.finalizeSchema(schema, resolver)
   }
 
+  /**
+   * Applies pre-conversion actions to the provided schema.
+   * @function
+   * @param {Partial<TypeConversionSchema>} schema - schema to be modified
+   * @param TypeConversionResolver | undefined} resolver - conversion resolver to be used on nested values
+   */
   prepareSchema (
     schema: Partial<TypeConversionSchema>,
     resolver?: TypeConversionResolver
@@ -258,6 +321,12 @@ export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<
     }
   }
 
+  /**
+   * Applies post-conversion actions to the provided schema.
+   * @function
+   * @param {Partial<TypeConversionSchema>} schema - schema to be modified
+   * @param TypeConversionResolver | undefined} resolver - conversion resolver to be used on nested values
+   */
   finalizeSchema (
     schema: Partial<TypeConversionSchema>,
     resolver?: TypeConversionResolver
@@ -269,6 +338,14 @@ export class TypedActionsValueConvertor<T = any> implements TypedValueConvertor<
     }
   }
 
+  /**
+   * Helper function for applying schema updates from a particular action request.
+   * @function
+   * @param {Partial<TypeConversionSchema>} schema - schema to be modified
+   * @param {TypedActionRequest} request - action request to be used
+   * @param {Record<string, TypeConversionAction<any>>} actionMap - action map to use for the provided request
+   * @param TypeConversionResolver | undefined} resolver - conversion resolver to be used on nested values
+   */
   expandSchemaFor (
     schema: Partial<TypeConversionSchema>,
     request: TypedActionRequest,

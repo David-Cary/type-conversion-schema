@@ -10,6 +10,13 @@ import {
   DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
 
+/**
+ * Converts the provided value to a BigInt.
+ * This involves wrapping non-array values in an array with undefined values excluded.
+ * @function
+ * @param {unknown} source - value to be converted
+ * @returns {any} source array or enclosing array for non-array sources
+ */
 export function getBigIntFrom (
   value: any,
   defaultValue: bigint = 0n
@@ -27,6 +34,11 @@ export function getBigIntFrom (
   return defaultValue
 }
 
+/**
+ * Forces the value to a positive BigInt, flipping the value of negatives.
+ * @class
+ * @implements {TypeConversionAction<bigint>}
+ */
 export class PositiveBigIntAction implements TypeConversionAction<bigint> {
   transform (value: bigint): bigint {
     return value < 0 ? -value : value
@@ -44,6 +56,11 @@ export class PositiveBigIntAction implements TypeConversionAction<bigint> {
   }
 }
 
+/**
+ * Forces the value to a negative BigInt, flipping the value of positives.
+ * @class
+ * @implements {TypeConversionAction<bigint>}
+ */
 export class NegativeBigIntAction implements TypeConversionAction<bigint> {
   transform (value: bigint): bigint {
     return value > 0 ? -value : value
@@ -61,6 +78,10 @@ export class NegativeBigIntAction implements TypeConversionAction<bigint> {
   }
 }
 
+/**
+ * Provides default actions for conversions to a BigInt.
+ * @const
+ */
 export const DEFAULT_BIG_INT_ACTIONS: TypedActionMap<bigint> = {
   untyped: { ...DEFAULT_UNTYPED_CONVERSIONS },
   conversion: {},
@@ -70,6 +91,11 @@ export const DEFAULT_BIG_INT_ACTIONS: TypedActionMap<bigint> = {
   }
 }
 
+/**
+ * Handles conversion of a given value to a BigInt.
+ * @class
+ * @implements {TypedActionsValueConvertor<bigint>}
+ */
 export class ToBigIntConvertor extends TypedActionsValueConvertor<bigint> {
   constructor (
     actions: TypedActionMap<bigint> = DEFAULT_BIG_INT_ACTIONS

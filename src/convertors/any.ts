@@ -10,6 +10,11 @@ import {
   DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
 
+/**
+ * Only applies non-type specific actions to the provided value.
+ * @class
+ * @implements {TypedActionsValueConvertor<any>}
+ */
 export class ToAnyConvertor extends TypedActionsValueConvertor<any> {
   constructor (
     actions: Record<string, TypeConversionAction<any>> = DEFAULT_UNTYPED_CONVERSIONS

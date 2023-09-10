@@ -10,6 +10,12 @@ import {
   DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
 
+/**
+ * Reads in certain predefined values as false.
+ * By default, this is just the string 'false', but other values can be passed in through the option's 'false' property.
+ * @class
+ * @implements {TypeConversionAction<any[], boolean>}
+ */
 export class ParseToBooleanAction implements TypeConversionAction<any, boolean> {
   transform (
     value: any,
@@ -22,13 +28,21 @@ export class ParseToBooleanAction implements TypeConversionAction<any, boolean> 
     return Boolean(value)
   }
 }
-
+/**
+ * Flips the value of provided boolean from true to false and vice versa.
+ * @class
+ * @implements {TypeConversionAction<boolean>}
+ */
 export class NegateBooleanAction implements TypeConversionAction<boolean> {
   transform (value: boolean): any {
     return !value
   }
 }
 
+/**
+ * Provides default actions for conversions to a boolean.
+ * @const
+ */
 export const DEFAULT_BOOLEAN_ACTIONS: TypedActionMap<boolean> = {
   untyped: { ...DEFAULT_UNTYPED_CONVERSIONS },
   conversion: {
@@ -39,6 +53,11 @@ export const DEFAULT_BOOLEAN_ACTIONS: TypedActionMap<boolean> = {
   }
 }
 
+/**
+ * Handles conversion of a given value to a boolean.
+ * @class
+ * @implements {TypedActionsValueConvertor<boolean>}
+ */
 export class ToBooleanConvertor extends TypedActionsValueConvertor<boolean> {
   constructor (
     actions: TypedActionMap<boolean> = DEFAULT_BOOLEAN_ACTIONS

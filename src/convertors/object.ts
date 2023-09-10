@@ -13,8 +13,21 @@ import {
 } from './actions'
 import { cloneJSON } from '../schema/JSON'
 
+/**
+ * Refers to any plain old javascript object.
+ * @type {Record<string, unknown>}
+ */
 export type POJObject = Record<string, unknown>
 
+/**
+ * Converts the provided value to an object.
+ * For arrays, this means remapping items to keys that match their indices.
+ * For strings, JSON parse is attempted.
+ * Any other values or a failed parse result in an empty object.
+ * @function
+ * @param {any} source - value to be converted
+ * @returns {string} resulting object
+ */
 export function getObjectFrom (source: unknown): POJObject {
   switch (typeof source) {
     case 'object': {
@@ -39,6 +52,12 @@ export function getObjectFrom (source: unknown): POJObject {
   return {}
 }
 
+/**
+ * Wraps the provided value in an object.
+ * The key for the wrapped value is taken from the 'key' option, defaulting to 'value'.
+ * @class
+ * @implements {TypeConversionAction<any, POJObject>}
+ */
 export class CreateWrapperObjectAction implements TypeConversionAction<any, POJObject> {
   transform (
     value: any,
@@ -49,6 +68,11 @@ export class CreateWrapperObjectAction implements TypeConversionAction<any, POJO
   }
 }
 
+/**
+ * Gets a copy of the provided object that excludes all values whose key is in the option's 'properties' array.
+ * @class
+ * @implements {TypeConversionAction<POJObject>}
+ */
 export class OmitPropertiesAction implements TypeConversionAction<POJObject> {
   transform (
     value: POJObject,
@@ -67,6 +91,11 @@ export class OmitPropertiesAction implements TypeConversionAction<POJObject> {
   }
 }
 
+/**
+ * Gets a copy of the provided object that only includes values whose key is in the option's 'properties' array.
+ * @class
+ * @implements {TypeConversionAction<POJObject>}
+ */
 export class PickPropertiesAction implements TypeConversionAction<POJObject> {
   transform (
     value: POJObject,
@@ -85,6 +114,16 @@ export class PickPropertiesAction implements TypeConversionAction<POJObject> {
   }
 }
 
+/**
+ * Modifies a nested value within the provided object / array.
+ * The path to the target value is taken from the option of the same name.
+ * The value to be assigned can be set directly through the 'value' option.
+ * If the 'from' option is set, the set value will be results of a getNestedValue call using the 'from' option as the path.
+ * If the 'default' option is set, that will be used if the retrieved value is undefined.
+ * @template T
+ * @class
+ * @implements {TypeConversionAction<T>}
+ */
 export class SetNestedValueAction<T> implements TypeConversionAction<T> {
   transform (
     value: T,
@@ -102,6 +141,13 @@ export class SetNestedValueAction<T> implements TypeConversionAction<T> {
     return value
   }
 
+  /**
+   * Helper function that performs the actual value assignment for this action.
+   * @function
+   * @param {any} collection - top level value to be modified
+   * @param {any} path - key or array of keys indicating the property to be set
+   * @param {unknown} value - value to be used at the target location
+   */
   setNestedValue (
     collection: any,
     path: any,
@@ -146,6 +192,12 @@ export class SetNestedValueAction<T> implements TypeConversionAction<T> {
     }
   }
 
+  /**
+   * Helper function that creates a wrapper object or array, depending on the type of key provided.
+   * @function
+   * @param {any} key - key to be used
+   * @Returns {POJObject | any[] | undefined} an empty object for string keys, an empty array for number keys, or undefined for an invalid key
+   */
   createCollectionFor (key: any): POJObject | any[] | undefined {
     switch (typeof key) {
       case 'string': {
@@ -158,6 +210,13 @@ export class SetNestedValueAction<T> implements TypeConversionAction<T> {
   }
 }
 
+/**
+ * Removes a nested value within the provided object / array.
+ * The path to the target value is taken from the option of the same name.
+ * @template T
+ * @class
+ * @implements {TypeConversionAction<T>}
+ */
 export class DeleteNestedValueAction<T> implements TypeConversionAction<T> {
   transform (
     value: T,
@@ -169,6 +228,12 @@ export class DeleteNestedValueAction<T> implements TypeConversionAction<T> {
     return value
   }
 
+  /**
+   * Helper function that performs the actual removal of the target value.
+   * @function
+   * @param {any} collection - object / array containing the target value
+   * @param {any} path - key or key array to the target value.
+   */
   deleteNestedValue (
     collection: any,
     path: any
@@ -196,6 +261,10 @@ export class DeleteNestedValueAction<T> implements TypeConversionAction<T> {
   }
 }
 
+/**
+ * Provides default actions for conversions to an object.
+ * @const
+ */
 export const DEFAULT_OBJECT_ACTIONS: TypedActionMap<POJObject> = {
   untyped: { ...DEFAULT_UNTYPED_CONVERSIONS },
   conversion: {
@@ -209,6 +278,11 @@ export const DEFAULT_OBJECT_ACTIONS: TypedActionMap<POJObject> = {
   }
 }
 
+/**
+ * Handles conversion of a given value to an object.
+ * @class
+ * @implements {TypedActionsValueConvertor<POJObject>}
+ */
 export class ToObjectConvertor extends TypedActionsValueConvertor<POJObject> {
   readonly clone: (value: any) => any
 
@@ -250,6 +324,14 @@ export class ToObjectConvertor extends TypedActionsValueConvertor<POJObject> {
     return value
   }
 
+  /**
+   * Helper function that enforces object schema restrictions on the target object.
+   * @function
+   * @param {Partial<TypeConversionSchema>} schema - schema to be used
+   * @param {POJObject} value - object to be modified
+   * @param TypeConversionResolver | undefined} resolver - conversion resolver to be used on nested values
+   * @param {TypeConversionContext | undefined} context - additional values to be used for resolving references
+   */
   applySchemaTo (
     schema: Partial<TypeConversionSchema>,
     target: POJObject,

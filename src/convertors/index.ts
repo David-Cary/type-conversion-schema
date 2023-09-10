@@ -21,6 +21,10 @@ export * from './object'
 export * from './string'
 export * from './symbol'
 
+/**
+ * Provides default type conversion handlers.
+ * @const
+ */
 export const DEFAULT_TYPE_CONVERTORS = {
   any: new ToAnyConvertor(),
   array: new ToArrayConvertor(),

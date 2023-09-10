@@ -23,6 +23,11 @@ export function getSymbolFrom (value: any): symbol {
   return Symbol(description)
 }
 
+/**
+ * Handles using the symbol for a particular key string.
+ * @class
+ * @implements {TypeConversionAction<any, symbol>}
+ */
 export class CreateKeySymbolAction implements TypeConversionAction<any, symbol> {
   transform (
     value: any,
@@ -51,6 +56,10 @@ export class CreateKeySymbolAction implements TypeConversionAction<any, symbol> 
   }
 }
 
+/**
+ * Provides default actions for conversions to a symbol.
+ * @const
+ */
 export const DEFAULT_SYMBOL_ACTIONS: TypedActionMap<symbol> = {
   untyped: { ...DEFAULT_UNTYPED_CONVERSIONS },
   conversion: {
@@ -59,6 +68,11 @@ export const DEFAULT_SYMBOL_ACTIONS: TypedActionMap<symbol> = {
   typed: {}
 }
 
+/**
+ * Handles conversion of a given value to a symbol.
+ * @class
+ * @implements {TypedActionsValueConvertor<symbol>}
+ */
 export class ToSymbolConvertor extends TypedActionsValueConvertor<symbol> {
   constructor (
     actions: TypedActionMap<symbol> = DEFAULT_SYMBOL_ACTIONS

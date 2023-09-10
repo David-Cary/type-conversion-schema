@@ -18,6 +18,14 @@ import {
   SetNestedValueAction
 } from './object'
 
+
+/**
+ * Converts the provided value to an array.
+ * This involves wrapping non-array values in an array with undefined values excluded.
+ * @function
+ * @param {unknown} source - value to be converted
+ * @returns {any[]} source array or enclosing array for non-array sources
+ */
 export function getArrayFrom (source: unknown): any[] {
   if (Array.isArray(source)) {
     return source
@@ -25,6 +33,12 @@ export function getArrayFrom (source: unknown): any[] {
   return source !== undefined ? [source] : []
 }
 
+/**
+ * Creates a shallow copy of the target array.
+ * If passed 'from' and 'to' numbers in the options this will only copy a subset of the array.
+ * @class
+ * @implements {TypeConversionAction<any[]>}
+ */
 export class CopyArrayAction implements TypeConversionAction<any[]> {
   transform (
     value: any[],
@@ -45,6 +59,11 @@ export class CopyArrayAction implements TypeConversionAction<any[]> {
   }
 }
 
+/**
+ * Retrieves an array from a potential JSON string.
+ * @class
+ * @implements {TypeConversionAction<any, any[]>}
+ */
 export class ParseArrayStringAction implements TypeConversionAction<any, any[]> {
   transform (
     value: any,
@@ -62,6 +81,14 @@ export class ParseArrayStringAction implements TypeConversionAction<any, any[]> 
   }
 }
 
+/**
+ * Adds a particular value to the target array.
+ * If options include an index, that will be used as the target postion.  Otherwise the value will be added to the end.
+ * If options include a repeat number that many copies of the value will be added.
+ * If options do not include a value, the added value will be undefined.
+ * @class
+ * @implements {TypeConversionAction<any[]>}
+ */
 export class InsertArrayItemAction implements TypeConversionAction<any[]> {
   transform (
     value: any[],
@@ -91,6 +118,13 @@ export class InsertArrayItemAction implements TypeConversionAction<any[]> {
   }
 }
 
+/**
+ * Removes values from the target array.
+ * If options include an index, that will be used as the target postion.  Otherwise the value will be removed from the end.
+ * If options include a count that many items will be removed.
+ * @class
+ * @implements {TypeConversionAction<any[]>}
+ */
 export class DeleteArrayItemAction implements TypeConversionAction<any[]> {
   transform (
     value: any[],
@@ -111,6 +145,10 @@ export class DeleteArrayItemAction implements TypeConversionAction<any[]> {
   }
 }
 
+/**
+ * Provides default actions for conversions to an array.
+ * @const
+ */
 export const DEFAULT_ARRAY_ACTIONS: TypedActionMap<any[]> = {
   untyped: { ...DEFAULT_UNTYPED_CONVERSIONS },
   conversion: {
@@ -125,6 +163,11 @@ export const DEFAULT_ARRAY_ACTIONS: TypedActionMap<any[]> = {
   }
 }
 
+/**
+ * Handles conversion of a given value to an array.
+ * @class
+ * @implements {TypedActionsValueConvertor<symbol>}
+ */
 export class ToArrayConvertor extends TypedActionsValueConvertor<any[]> {
   constructor (
     actions: TypedActionMap<any[]> = DEFAULT_ARRAY_ACTIONS
@@ -162,6 +205,14 @@ export class ToArrayConvertor extends TypedActionsValueConvertor<any[]> {
     return value
   }
 
+  /**
+   * Helper function that enforces array schema restrictions on the target array.
+   * @function
+   * @param {Partial<TypeConversionSchema>} schema - schema to be used
+   * @param {any[]} value - array to be modified
+   * @param TypeConversionResolver | undefined} resolver - conversion resolver to be used on nested values
+   * @param {TypeConversionContext | undefined} context - additional values to be used for resolving references
+   */
   applySchemaTo (
     schema: Partial<TypeConversionSchema>,
     target: any[],

@@ -10,6 +10,11 @@ import {
   DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
 
+/**
+ * Rounds the provided number to the nearest integer value.
+ * @class
+ * @implements {TypeConversionAction<number>}
+ */
 export class RoundNumberAction implements TypeConversionAction<number> {
   transform (value: number): number {
     return Math.round(value)
@@ -25,18 +30,33 @@ export class RoundNumberAction implements TypeConversionAction<number> {
   }
 }
 
+/**
+ * Rounds the provided number to the next highest integer value.
+ * @class
+ * @implements {RoundNumberAction}
+ */
 export class RoundUpNumberAction extends RoundNumberAction {
   transform (value: number): number {
     return Math.ceil(value)
   }
 }
 
+/**
+ * Rounds the provided number to the next lowest integer value.
+ * @class
+ * @implements {RoundNumberAction}
+ */
 export class RoundDownNumberAction extends RoundNumberAction {
   transform (value: number): number {
     return Math.floor(value)
   }
 }
 
+/**
+ * Forces the value to a positive number, flipping the value of negatives.
+ * @class
+ * @implements {TypeConversionAction<number>}
+ */
 export class PositiveNumberAction implements TypeConversionAction<number> {
   transform (value: number): number {
     return value < 0 ? -value : value
@@ -54,6 +74,11 @@ export class PositiveNumberAction implements TypeConversionAction<number> {
   }
 }
 
+/**
+ * Forces the value to a negative number, flipping the value of positives.
+ * @class
+ * @implements {TypeConversionAction<number>}
+ */
 export class NegativeNumberAction implements TypeConversionAction<number> {
   transform (value: number): number {
     return value > 0 ? -value : value
@@ -71,6 +96,10 @@ export class NegativeNumberAction implements TypeConversionAction<number> {
   }
 }
 
+/**
+ * Provides default actions for conversions to a number.
+ * @const
+ */
 export const DEFAULT_NUMBER_ACTIONS: TypedActionMap<number> = {
   untyped: { ...DEFAULT_UNTYPED_CONVERSIONS },
   conversion: {},
@@ -83,6 +112,11 @@ export const DEFAULT_NUMBER_ACTIONS: TypedActionMap<number> = {
   }
 }
 
+/**
+ * Handles conversion of a given value to a number.
+ * @class
+ * @implements {TypedActionsValueConvertor<number>}
+ */
 export class ToNumberConvertor extends TypedActionsValueConvertor<number> {
   constructor (
     actions: TypedActionMap<number> = DEFAULT_NUMBER_ACTIONS
