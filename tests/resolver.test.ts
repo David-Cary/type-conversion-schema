@@ -66,4 +66,15 @@ describe("TypeConversionResolver", () => {
       expect(schema).toBe(source)
     })
   })
+  describe("convert", () => {
+    test("should perform the provided conversion", () => {
+      const results = resolver.convert(
+        1,
+        {
+          type: 'string'
+        }
+      )
+      expect(results).toEqual('1')
+    })
+  })
 })

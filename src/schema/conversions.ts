@@ -122,7 +122,6 @@ export interface TypeConversionSchemaUnion extends AbstractJSTypeSchema {
   anyOf: Array<TypeConversionSchema | JSTypeName>
 }
 
-
 /**
  * All data types that can be used to determine how a data type conversion should be handled.
  * @type {object | JSTypeName}
@@ -420,7 +419,7 @@ export class TypeConversionResolver {
    * @param {TypeConversionContext | undefined} base - source of default context values
    * @returns {T} resulting subcontext
    */
-  getChildContext(
+  getChildContext (
     parent: TypeConversionSchema,
     base?: TypeConversionContext
   ): TypeConversionContext {

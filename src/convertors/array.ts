@@ -18,7 +18,6 @@ import {
   SetNestedValueAction
 } from './object'
 
-
 /**
  * Converts the provided value to an array.
  * This involves wrapping non-array values in an array with undefined values excluded.
@@ -224,7 +223,7 @@ export class ToArrayConvertor extends TypedActionsValueConvertor<any[]> {
       { type: 'array' },
       schema
     )
-    let itemContext = resolver != null
+    const itemContext = resolver != null
       ? resolver.getChildContext(fullSchema, context)
       : context
     if ('prefixItems' in schema && schema.prefixItems != null) {

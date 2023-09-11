@@ -17,7 +17,7 @@ import {
 } from '../schema/JSON'
 
 /**
- * Retries a nested property value for a given path.
+ * Retrieves a nested property value for a given path.
  * @function
  * @param {amy} source - object the value should be drawn from
  * @param {any} path - key or array of keys to use to get the value
@@ -50,6 +50,7 @@ export function getNestedValue (
 
 /**
  * Handles redirecting to a nested value for the next step of a value conversion.
+ * The path to the target value is taken from the option of the same name.
  * @class
  * @implements {TypeConversionAction}
  */
@@ -65,6 +66,12 @@ export class GetValueAction implements TypeConversionAction {
   }
 }
 
+/**
+ * Tries to cast the provided value to an action request.
+ * @function
+ * @param {amy} source - value to be cast
+ * @returns {any} recast value, if valid
+ */
 export function getActionRequestFrom (
   source: any
 ): TypedActionRequest | undefined {
@@ -125,6 +132,7 @@ export function getConversionSchemaFrom (source: any): TypeConversionSchema | un
 
 /**
  * Applies a conversion schema to the current value before passing it on the next action.
+ * The schema to be used is passed in through the "to" option.
  * @class
  * @implements {TypeConversionAction}
  */

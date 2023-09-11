@@ -63,6 +63,14 @@ export class CreateWrapperObjectAction implements TypeConversionAction<any, POJO
     value: any,
     options?: JSONObject
   ): POJObject {
+    if (
+      options?.asNeeded === true &&
+      typeof value === 'object' &&
+      value != null &&
+      !Array.isArray(value)
+    ) {
+      return value
+    }
     const key = options?.key != null ? String(options.key) : 'value'
     return { [key]: value }
   }

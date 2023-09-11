@@ -20,6 +20,7 @@
     "test-symbol": "jest tests/symbol.test.ts",
     "test-function": "jest tests/function.test.ts",
     "test-resolver": "jest tests/resolver.test.ts",
+    "test-jstype": "jest tests/jstype.test.ts",
     "build": "tsc"
   },
   "keywords": [
@@ -27,6 +28,7 @@
     "convert",
     "conversion",
     "schema",
+    "JSON",
     "typescript"
   ],
   "author": "David Cary",
