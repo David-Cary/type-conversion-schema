@@ -1,7 +1,8 @@
 import {
   type TypeConversionAction,
   type TypeConversionSchema,
-  type TypeConversionResolver
+  type TypeConversionResolver,
+  getBigIntFrom
 } from '../schema/conversions'
 import { type JSONObject } from '../schema/JSON'
 import {
@@ -9,30 +10,6 @@ import {
   type TypedActionMap,
   DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
-
-/**
- * Converts the provided value to a BigInt.
- * This involves wrapping non-array values in an array with undefined values excluded.
- * @function
- * @param {unknown} source - value to be converted
- * @returns {any} source array or enclosing array for non-array sources
- */
-export function getBigIntFrom (
-  value: any,
-  defaultValue: bigint = 0n
-): bigint {
-  switch (typeof value) {
-    case 'number':
-    case 'string':
-    case 'boolean': {
-      return BigInt(value)
-    }
-    case 'bigint': {
-      return value
-    }
-  }
-  return defaultValue
-}
 
 /**
  * Forces the value to a positive BigInt, flipping the value of negatives.

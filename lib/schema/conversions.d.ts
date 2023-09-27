@@ -1,4 +1,4 @@
-import { type JSTypeSchema, type AbstractJSTypeSchema, type AnySchema, type ArraySchema, type BigIntSchema, type BooleanSchema, type FunctionSchema, type NumberSchema, type NullSchema, type ObjectSchema, type StringSchema, type SymbolSchema, type UndefinedSchema, type JSTypeSchemaReference, JSTypeName } from './JSType';
+import { type JSTypeSchema, type AbstractJSTypeSchema, VariedJSTypeSchema, NumericJSTypeSchema, type AnySchema, type ArraySchema, type BigIntSchema, type BooleanSchema, type FunctionSchema, type NumberSchema, type NullSchema, type ObjectSchema, type StringSchema, type SymbolSchema, type UndefinedSchema, type JSTypeSchemaReference, AnyFunction, JSTypeName } from './JSType';
 import { type JSONObject } from './JSON';
 /**
  * Any object that uses a 'type' string to identify them.
@@ -69,8 +69,8 @@ export type TypeConversionSchema = (((AnySchema | BigIntSchema | BooleanSchema |
  * Adds type conversion callbacks to an JSTypeSchemaUnion's subschema properties.
  * @interface
  */
-export interface TypeConversionSchemaUnion extends AbstractJSTypeSchema {
-    anyOf: Array<TypeConversionSchema | JSTypeName>;
+export interface TypeConversionSchemaUnion extends AbstractTypeConversionSchema {
+    anyOf: Array<TypeConversionRequest>;
 }
 /**
  * All data types that can be used to determine how a data type conversion should be handled.
@@ -130,6 +130,13 @@ export interface TypeConversionAction<F = any, T = F> {
      */
     expandSchema?: (schema: Partial<TypeConversionSchema>, options?: JSONObject, resolver?: TypeConversionResolver) => void;
 }
+/**
+ * Tries to cast the provided value to an action request.
+ * @function
+ * @param {amy} source - value to be cast
+ * @returns {any} recast value, if valid
+ */
+export declare function getActionRequestFrom(source: any): TypedActionRequest | undefined;
 /**
  * Contains additional information for resolving a given type conversion request.
  * This is primarily used to resolver references within the schema.
@@ -231,3 +238,73 @@ export declare class TypeConversionResolver {
      */
     getExpandedSchema(source: TypeConversionRequest): TypeConversionSchema | TypeConversionSchemaUnion | JSTypeSchemaReference;
 }
+/**
+ * Extracts a type convesion schema from the provided value.
+ * @function
+ * @param {any} source - value to draw the schema from
+ * @returns {TypeConversionSchema | undefined} target schema, if any
+ */
+export declare function getConversionSchemaFrom(source: any): TypeConversionSchema | TypeConversionSchemaUnion | JSTypeSchemaReference;
+export declare function initAbstractConversionSchemaFrom(schema: AbstractTypeConversionSchema, source: Record<string, any>): void;
+export declare function initVariedConversionSchemaFrom<T>(schema: TypeConversionSchema & VariedJSTypeSchema<T>, source: Record<string, any>, convert: (value: any) => T): void;
+export declare function initNumericConversionSchemaFrom<T>(schema: TypeConversionSchema & NumericJSTypeSchema<T>, source: Record<string, any>, convert: (value: any) => T): void;
+export declare function initArrayConversionSchemaFrom(schema: ArrayCreationSchema, source: Record<string, any>): void;
+export declare function initFunctionConversionSchemaFrom(schema: FunctionCreationSchema, source: Record<string, any>): void;
+export declare function initObjectConversionSchemaFrom(schema: ObjectCreationSchema, source: Record<string, any>): void;
+export declare function initStringConversionSchemaFrom(schema: TypeConversionSchema & StringSchema, source: Record<string, any>): void;
+export declare function initSymbolConversionSchemaFrom(schema: TypeConversionSchema & SymbolSchema, source: Record<string, any>): void;
+export declare function getValueKey(collection: Record<string, any>, value: any): string | undefined;
+/**
+ * Converts the provided value to an array.
+ * This involves wrapping non-array values in an array with undefined values excluded.
+ * @function
+ * @param {unknown} source - value to be converted
+ * @returns {any[]} source array or enclosing array for non-array sources
+ */
+export declare function getArrayFrom(source: unknown): any[];
+/**
+ * Converts the provided value to a BigInt.
+ * This involves wrapping non-array values in an array with undefined values excluded.
+ * @function
+ * @param {unknown} source - value to be converted
+ * @returns {any} source array or enclosing array for non-array sources
+ */
+export declare function getBigIntFrom(value: any, defaultValue?: bigint): bigint;
+/**
+ * Converts the provided value to a function.
+ * If the value isn't already a function it will be wrapped in a fuction that returns that value.
+ * @function
+ * @param {any} source - value to be converted
+ * @returns {AnyFunction} resulting function
+ */
+export declare function getFunctionFrom(value: any): AnyFunction;
+/**
+ * Refers to any plain old javascript object.
+ * @type {Record<string, unknown>}
+ */
+export type POJObject = Record<string, unknown>;
+/**
+ * Converts the provided value to an object.
+ * For arrays, this means remapping items to keys that match their indices.
+ * For strings, JSON parse is attempted.
+ * Any other values or a failed parse result in an empty object.
+ * @function
+ * @param {any} source - value to be converted
+ * @returns {string} resulting object
+ */
+export declare function getObjectFrom(source: unknown): POJObject;
+export declare function getSymbolFrom(value: any): symbol;
+/**
+ * Callback to be used as the replacer function in JSON stringify calls.
+ * @type {Function}
+ */
+export type StringifyReplacerCallback = (this: any, key: string, value: any) => any;
+/**
+ * Provides a fallback to failed JSON stringify attempts.
+ * @function
+ * @param {any} source - value to be converted
+ * @param {StringifyReplacerCallback | Array<string | number> | null | undefined} replacer - replacer to pass in to JSON stringify.
+ * @param {number | string} space - spacing value to be used by JSON stringify
+ * @returns {string} resulting string
+ */
+export declare function safeJSONStringify(source: any, replacer?: StringifyReplacerCallback | Array<string | number> | null, space?: number | string): string;

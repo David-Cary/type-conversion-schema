@@ -1,7 +1,6 @@
 import { type TypeConversionAction, type TypeConversionSchema } from '../schema/conversions';
 import { type JSONObject } from '../schema/JSON';
 import { TypedActionsValueConvertor, type TypedActionMap } from './actions';
-export declare function getSymbolFrom(value: any): symbol;
 /**
  * Handles using the symbol for a particular key string.
  * @class

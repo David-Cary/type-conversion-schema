@@ -119,7 +119,15 @@ export interface NullSchema extends TypedJSTypeSchema {
 export interface NumberSchema extends NumericJSTypeSchema<number> {
     type: 'number';
 }
-export type JSONSchemaContentEncoding = ('7bit' | '8bit' | 'base64' | 'binary' | 'ietf-token' | 'quoted-printable' | 'x-token');
+export declare enum JSONSchemaContentEncoding {
+    SEVENT_BIT = "7bit",
+    EIGHT_BIT = "8bit",
+    BASE64 = "base64",
+    BINARY = "binary",
+    IETF_TOKEN = "ietf-token",
+    QUOTED_PRINTABLE = "quoted-printable",
+    X_TOKEN = "x-token"
+}
 /**
  * Adds JSON schema string properties to a javascript type schema.
  * @interface
@@ -171,7 +179,7 @@ export type BasicJSTypeSchema = (AnySchema | ArraySchema | BigIntSchema | Boolea
  * @interface
  */
 export interface JSTypeSchemaUnion extends AbstractJSTypeSchema {
-    anyOf: BasicJSTypeSchema[];
+    anyOf: JSTypeSchema[];
 }
 /**
  * Used to implement JSON schema style references within a javascript type schema.
@@ -197,17 +205,17 @@ export type JSONSchemaObject = Exclude<JSONSchema, boolean>;
 /**
  * Copies AbstractJSTypeSchema properties onto a JSON schema.
  * @function
- * @param {JSTypeSchema} source - javascript type schema we're copying
  * @param {JSONSchemaObject} shema - JSON schema we're modifying
+ * @param {JSTypeSchema} source - javascript type schema we're copying
  */
-export declare function initJSONSchema(source: JSTypeSchema, schema: JSONSchemaObject): void;
+export declare function initJSONSchema(schema: JSONSchemaObject, source: JSTypeSchema): void;
 /**
  * Copies VariedJSTypeSchema specific properties onto a JSON schema.
  * @function
- * @param {JSTypeSchema} source - javascript type schema we're copying
  * @param {JSONSchemaObject} shema - JSON schema we're modifying
+ * @param {JSTypeSchema} source - javascript type schema we're copying
  */
-export declare function initTypedJSONSchema<T>(source: VariedJSTypeSchema<T>, schema: JSONSchemaObject): void;
+export declare function initTypedJSONSchema<T>(schema: JSONSchemaObject, source: VariedJSTypeSchema<T>): void;
 /**
  * Tries to map array items to a new type while filtering out null/undefined values.
  * @template F, T

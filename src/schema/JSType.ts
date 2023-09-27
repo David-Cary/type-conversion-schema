@@ -133,15 +133,15 @@ export interface NumberSchema extends NumericJSTypeSchema<number> {
   type: 'number'
 }
 
-export type JSONSchemaContentEncoding = (
-  '7bit' |
-  '8bit' |
-  'base64' |
-  'binary' |
-  'ietf-token' |
-  'quoted-printable' |
-  'x-token'
-)
+export enum JSONSchemaContentEncoding {
+  SEVENT_BIT = '7bit',
+  EIGHT_BIT = '8bit',
+  BASE64 = 'base64',
+  BINARY = 'binary',
+  IETF_TOKEN = 'ietf-token',
+  QUOTED_PRINTABLE = 'quoted-printable',
+  X_TOKEN = 'x-token'
+}
 
 /**
  * Adds JSON schema string properties to a javascript type schema.
@@ -211,7 +211,7 @@ export type BasicJSTypeSchema = (
  * @interface
  */
 export interface JSTypeSchemaUnion extends AbstractJSTypeSchema {
-  anyOf: BasicJSTypeSchema[]
+  anyOf: JSTypeSchema[]
 }
 
 /**
@@ -255,16 +255,16 @@ export function JSTypeToJSONSchema (source: JSTypeSchema): JSONSchema | undefine
     if (!JSON_SCHEMA_TYPE_NAMES.includes(source.type)) {
       return undefined
     }
-    initJSONSchema(source, schema)
+    initJSONSchema(schema, source)
     schema.type = source.type
     switch (source.type) {
       case 'boolean': {
-        initTypedJSONSchema(source, schema)
+        initTypedJSONSchema(schema, source)
         break
       }
       case 'bigint':
       case 'number': {
-        initTypedJSONSchema<number | bigint>(source, schema)
+        initTypedJSONSchema<number | bigint>(schema, source)
         schema.type = source.integer === true ? 'integer' : 'number'
         if ('exclusiveMaximum' in source) schema.exclusiveMaximum = Number(source.exclusiveMaximum)
         if ('exclusiveMinimum' in source) schema.exclusiveMinimum = Number(source.exclusiveMinimum)
@@ -274,7 +274,7 @@ export function JSTypeToJSONSchema (source: JSTypeSchema): JSONSchema | undefine
         break
       }
       case 'string': {
-        initTypedJSONSchema(source, schema)
+        initTypedJSONSchema(schema, source)
         if ('contentEncoding' in source) schema.contentEncoding = source.contentEncoding
         if ('contentMediaType' in source) schema.contentMediaType = source.contentMediaType
         if ('format' in source) schema.format = source.format
@@ -284,7 +284,7 @@ export function JSTypeToJSONSchema (source: JSTypeSchema): JSONSchema | undefine
         break
       }
       case 'array': {
-        initTypedJSONSchema(source, schema)
+        initTypedJSONSchema(schema, source)
         if ('additionalItems' in source && source.additionalItems != null) {
           const converted = JSTypeToJSONSchema(source.additionalItems)
           if (converted != null) schema.additionalItems = converted
@@ -309,7 +309,7 @@ export function JSTypeToJSONSchema (source: JSTypeSchema): JSONSchema | undefine
         break
       }
       case 'object': {
-        initTypedJSONSchema(source, schema)
+        initTypedJSONSchema(schema, source)
         if ('additionalProperties' in source && source.additionalProperties != null) {
           const converted = JSTypeToJSONSchema(source.additionalProperties)
           if (converted != null) schema.additionalProperties = converted
@@ -336,7 +336,7 @@ export function JSTypeToJSONSchema (source: JSTypeSchema): JSONSchema | undefine
       }
     }
   } else if ('anyOf' in source) {
-    initJSONSchema(source, schema)
+    initJSONSchema(schema, source)
     const anyOf = getTypedArray(
       source.anyOf,
       item => JSTypeToJSONSchema(item)
@@ -353,12 +353,12 @@ export type JSONSchemaObject = Exclude<JSONSchema, boolean>
 /**
  * Copies AbstractJSTypeSchema properties onto a JSON schema.
  * @function
- * @param {JSTypeSchema} source - javascript type schema we're copying
  * @param {JSONSchemaObject} shema - JSON schema we're modifying
+ * @param {JSTypeSchema} source - javascript type schema we're copying
  */
 export function initJSONSchema (
-  source: JSTypeSchema,
-  schema: JSONSchemaObject
+  schema: JSONSchemaObject,
+  source: JSTypeSchema
 ): void {
   if ('$ref' in source) {
     schema.$ref = source.$ref
@@ -372,7 +372,7 @@ export function initJSONSchema (
     if (source.$defs != null) {
       schema.$defs = getTypedValueRecord(
         source.$defs,
-        item => JSTypeToJSONSchema(item)
+        JSTypeToJSONSchema
       )
     }
   }
@@ -381,12 +381,12 @@ export function initJSONSchema (
 /**
  * Copies VariedJSTypeSchema specific properties onto a JSON schema.
  * @function
- * @param {JSTypeSchema} source - javascript type schema we're copying
  * @param {JSONSchemaObject} shema - JSON schema we're modifying
+ * @param {JSTypeSchema} source - javascript type schema we're copying
  */
 export function initTypedJSONSchema<T> (
-  source: VariedJSTypeSchema<T>,
-  schema: JSONSchemaObject
+  schema: JSONSchemaObject,
+  source: VariedJSTypeSchema<T>
 ): void {
   if ('default' in source) schema.default = source.default
   if ('examples' in source) schema.examples = source.examples

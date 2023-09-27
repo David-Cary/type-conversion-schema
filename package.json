@@ -1,6 +1,6 @@
 {
   "name": "type-conversion-schema",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Provides and applies a schema for converting untyped data to other types",
   "main": "lib/index.js",
   "files": [

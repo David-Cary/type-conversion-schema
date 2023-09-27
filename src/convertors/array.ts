@@ -2,7 +2,8 @@ import {
   type TypeConversionAction,
   type TypeConversionResolver,
   type TypeConversionSchema,
-  type TypeConversionContext
+  type TypeConversionContext,
+  getArrayFrom
 } from '../schema/conversions'
 import {
   type JSONObject,
@@ -17,20 +18,6 @@ import {
   DeleteNestedValueAction,
   SetNestedValueAction
 } from './object'
-
-/**
- * Converts the provided value to an array.
- * This involves wrapping non-array values in an array with undefined values excluded.
- * @function
- * @param {unknown} source - value to be converted
- * @returns {any[]} source array or enclosing array for non-array sources
- */
-export function getArrayFrom (source: unknown): any[] {
-  if (Array.isArray(source)) {
-    return source
-  }
-  return source !== undefined ? [source] : []
-}
 
 /**
  * Creates a shallow copy of the target array.

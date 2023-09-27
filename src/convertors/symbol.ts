@@ -1,6 +1,7 @@
 import {
   type TypeConversionAction,
-  type TypeConversionSchema
+  type TypeConversionSchema,
+  getSymbolFrom
 } from '../schema/conversions'
 import { type JSONObject } from '../schema/JSON'
 import {
@@ -8,20 +9,6 @@ import {
   type TypedActionMap,
   DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
-import { safeJSONStringify } from './string'
-
-export function getSymbolFrom (value: any): symbol {
-  switch (typeof value) {
-    case 'string': {
-      return Symbol(value)
-    }
-    case 'symbol': {
-      return value
-    }
-  }
-  const description = safeJSONStringify(value)
-  return Symbol(description)
-}
 
 /**
  * Handles using the symbol for a particular key string.

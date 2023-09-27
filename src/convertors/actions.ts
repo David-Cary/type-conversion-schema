@@ -5,12 +5,11 @@ import {
   type TypedValueConvertor,
   type TypeConversionResolver,
   type TypeConversionSchema,
-  type TypeConversionContext
+  type TypeConversionContext,
+  getConversionSchemaFrom
 } from '../schema/conversions'
 import {
-  getTypedArray,
-  getExtendedTypeOf,
-  stringToJSTypeName
+  getExtendedTypeOf
 } from '../schema/JSType'
 import {
   type JSONObject
@@ -67,70 +66,6 @@ export class GetValueAction implements TypeConversionAction {
 }
 
 /**
- * Tries to cast the provided value to an action request.
- * @function
- * @param {amy} source - value to be cast
- * @returns {any} recast value, if valid
- */
-export function getActionRequestFrom (
-  source: any
-): TypedActionRequest | undefined {
-  switch (typeof source) {
-    case 'string': {
-      return source
-    }
-    case 'object': {
-      if (
-        typeof source === 'object' &&
-        source != null &&
-        typeof source.type === 'string'
-      ) {
-        return source
-      }
-      break
-    }
-  }
-}
-
-/**
- * Extracts a type convesion schema from the provided value.
- * @function
- * @param {any} source - value to draw the schema from
- * @returns {TypeConversionSchema | undefined} target schema, if any
- */
-export function getConversionSchemaFrom (source: any): TypeConversionSchema | undefined {
-  switch (typeof source) {
-    case 'string': {
-      return { type: stringToJSTypeName(source) }
-    }
-    case 'object': {
-      if (source != null && !Array.isArray(source)) {
-        const schema: TypeConversionSchema = {
-          type: stringToJSTypeName(String(source.type))
-        }
-        if (Array.isArray(source.prepare)) {
-          schema.prepare = getTypedArray(
-            source.prepare,
-            item => getActionRequestFrom(item)
-          )
-        }
-        if (source.convertVia != null) {
-          schema.convertVia = getActionRequestFrom(source.convertVia)
-        }
-        if (Array.isArray(source.finalize)) {
-          schema.finalize = getTypedArray(
-            source.finalize,
-            item => getActionRequestFrom(item)
-          )
-        }
-        return schema
-      }
-      break
-    }
-  }
-}
-
-/**
  * Applies a conversion schema to the current value before passing it on the next action.
  * The schema to be used is passed in through the "to" option.
  * @class
@@ -142,11 +77,9 @@ export class NestedConversionAction implements TypeConversionAction {
     options?: JSONObject,
     resolver?: TypeConversionResolver
   ): any {
-    if (resolver != null && options != null) {
+    if (resolver != null && options?.to != null) {
       const schema = getConversionSchemaFrom(options.to)
-      if (schema != null) {
-        return resolver.convert(value, schema)
-      }
+      return resolver.convert(value, schema)
     }
     return value
   }
@@ -156,12 +89,10 @@ export class NestedConversionAction implements TypeConversionAction {
     options?: JSONObject,
     resolver?: TypeConversionResolver
   ): void {
-    if (resolver != null && options != null) {
+    if (resolver != null && options?.to != null) {
       const subschema = getConversionSchemaFrom(options.to)
-      if (subschema != null) {
-        const resolved = resolver.getExpandedSchema(subschema) as unknown
-        options.to = resolved as JSONObject
-      }
+      const resolved = resolver.getExpandedSchema(subschema) as unknown
+      options.to = resolved as JSONObject
     }
   }
 }

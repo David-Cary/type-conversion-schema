@@ -1,7 +1,9 @@
 import {
   type TypeConversionAction,
   type TypeConversionResolver,
-  type TypeConversionSchema
+  type TypeConversionSchema,
+  getConversionSchemaFrom,
+  getFunctionFrom
 } from '../schema/conversions'
 import { type JSONObject } from '../schema/JSON'
 import {
@@ -11,23 +13,8 @@ import {
 import {
   TypedActionsValueConvertor,
   type TypedActionMap,
-  getConversionSchemaFrom,
   DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
-
-/**
- * Converts the provided value to a function.
- * If the value isn't already a function it will be wrapped in a fuction that returns that value.
- * @function
- * @param {any} source - value to be converted
- * @returns {AnyFunction} resulting function
- */
-export function getFunctionFrom (value: any): AnyFunction {
-  if (typeof value === 'function') {
-    return value
-  }
-  return () => value
-}
 
 /**
  * Creates a function that returns the provided value.
@@ -44,11 +31,9 @@ export class CreateWrapperFunctionAction implements TypeConversionAction<any, An
     if (typeof value === 'function') {
       return value
     }
-    if (options != null && resolver != null) {
+    if (options?.returns != null && resolver != null) {
       const returnSchema = getConversionSchemaFrom(options.returns)
-      if (returnSchema != null) {
-        return () => resolver.convert(value, returnSchema)
-      }
+      return () => resolver.convert(value, returnSchema)
     }
     return () => value
   }
@@ -57,11 +42,9 @@ export class CreateWrapperFunctionAction implements TypeConversionAction<any, An
     schema: Partial<TypeConversionSchema>,
     options?: JSONObject
   ): void {
-    if (schema.type === JSTypeName.FUNCTION) {
-      const returnSchema = getConversionSchemaFrom(options?.returns)
-      if (returnSchema != null) {
-        schema.returns = returnSchema
-      }
+    if (schema.type === JSTypeName.FUNCTION && options?.returns != null) {
+      const returnSchema = getConversionSchemaFrom(options.returns)
+      schema.returns = returnSchema
     }
   }
 }

@@ -2,14 +2,6 @@ import { type TypeConversionAction, type TypeConversionResolver, type TypeConver
 import { type JSONObject } from '../schema/JSON';
 import { TypedActionsValueConvertor, type TypedActionMap } from './actions';
 /**
- * Converts the provided value to an array.
- * This involves wrapping non-array values in an array with undefined values excluded.
- * @function
- * @param {unknown} source - value to be converted
- * @returns {any[]} source array or enclosing array for non-array sources
- */
-export declare function getArrayFrom(source: unknown): any[];
-/**
  * Creates a shallow copy of the target array.
  * If passed 'from' and 'to' numbers in the options this will only copy a subset of the array.
  * @class

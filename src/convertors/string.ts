@@ -1,7 +1,8 @@
 import {
   type TypeConversionAction,
   type TypeConversionSchema,
-  type TypeConversionResolver
+  type TypeConversionResolver,
+  safeJSONStringify
 } from '../schema/conversions'
 import { type JSONObject } from '../schema/JSON'
 import {
@@ -9,36 +10,6 @@ import {
   type TypedActionMap,
   DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
-
-/**
- * Callback to be used as the replacer function in JSON stringify calls.
- * @type {Function}
- */
-export type StringifyReplacerCallback = (this: any, key: string, value: any) => any
-
-/**
- * Provides a fallback to failed JSON stringify attempts.
- * @function
- * @param {any} source - value to be converted
- * @param {StringifyReplacerCallback | Array<string | number> | null | undefined} replacer - replacer to pass in to JSON stringify.
- * @param {number | string} space - spacing value to be used by JSON stringify
- * @returns {string} resulting string
- */
-export function safeJSONStringify (
-  source: any,
-  replacer?: StringifyReplacerCallback | Array<string | number> | null,
-  space?: number | string
-): string {
-  try {
-    // Redundant, but appeases typescript.
-    if (typeof replacer === 'function') {
-      return JSON.stringify(source, replacer, space)
-    }
-    return JSON.stringify(source, replacer, space)
-  } catch (error) {
-    return String(source)
-  }
-}
 
 /**
  * Converts any non-strings to strings via JSON stringify.

@@ -1,6 +1,8 @@
 import {
   type JSTypeSchema,
   type AbstractJSTypeSchema,
+  type VariedJSTypeSchema,
+  type NumericJSTypeSchema,
   type AnySchema,
   type ArraySchema,
   type BigIntSchema,
@@ -13,7 +15,12 @@ import {
   type SymbolSchema,
   type UndefinedSchema,
   type JSTypeSchemaReference,
-  JSTypeName
+  type AnyFunction,
+  JSTypeName,
+  JSONSchemaContentEncoding,
+  getTypedArray,
+  getTypedValueRecord,
+  stringToJSTypeName
 } from './JSType'
 import { type JSONObject } from './JSON'
 
@@ -118,8 +125,8 @@ export type TypeConversionSchema = (
  * Adds type conversion callbacks to an JSTypeSchemaUnion's subschema properties.
  * @interface
  */
-export interface TypeConversionSchemaUnion extends AbstractJSTypeSchema {
-  anyOf: Array<TypeConversionSchema | JSTypeName>
+export interface TypeConversionSchemaUnion extends AbstractTypeConversionSchema {
+  anyOf: TypeConversionRequest[]
 }
 
 /**
@@ -182,6 +189,12 @@ export function typeConversionToJSTypeSchema (
   const schema: Record<string, any> = { ...request }
   if ('type' in request) {
     removeTypeConversionActionsFrom(schema as TypeConversionSchema)
+    if (request.$defs != null) {
+      schema.$defs = convertRecordValues(
+        request.$defs,
+        typeConversionToJSTypeSchema
+      )
+    }
     switch (request.type) {
       case 'array': {
         if (request.additionalItems != null) {
@@ -301,6 +314,32 @@ export interface TypeConversionAction<F = any, T = F> {
 }
 
 /**
+ * Tries to cast the provided value to an action request.
+ * @function
+ * @param {amy} source - value to be cast
+ * @returns {any} recast value, if valid
+ */
+export function getActionRequestFrom (
+  source: any
+): TypedActionRequest | undefined {
+  switch (typeof source) {
+    case 'string': {
+      return source
+    }
+    case 'object': {
+      if (
+        typeof source === 'object' &&
+        source != null &&
+        typeof source.type === 'string'
+      ) {
+        return source
+      }
+      break
+    }
+  }
+}
+
+/**
  * Contains additional information for resolving a given type conversion request.
  * This is primarily used to resolver references within the schema.
  * @interface
@@ -387,17 +426,15 @@ export class TypeConversionResolver {
     if (typeof request === 'object') {
       if ('anyOf' in request) {
         for (const item of request.anyOf) {
-          const schema = typeof item === 'object' ? item : { type: item }
+          const schema = this.getRequestSchema(item, value, context)
+          if (schema == null) continue
           const convertor = this.convertors[schema.type]
           if (convertor?.matches(value)) {
             return schema
           }
         }
         const firstItem = request.anyOf[0]
-        if (firstItem != null) {
-          return typeof firstItem === 'object' ? firstItem : { type: firstItem }
-        }
-        return undefined
+        return this.getRequestSchema(firstItem, value, context)
       }
       if ('$ref' in request) {
         const resolvedRef = this.resolveReference(request, context)
@@ -517,5 +554,469 @@ export class TypeConversionResolver {
       convertor.expandSchema(schema, this)
     }
     return schema
+  }
+}
+
+/**
+ * Extracts a type convesion schema from the provided value.
+ * @function
+ * @param {any} source - value to draw the schema from
+ * @returns {TypeConversionSchema | undefined} target schema, if any
+ */
+export function getConversionSchemaFrom (
+  source: any
+): TypeConversionSchema | TypeConversionSchemaUnion | JSTypeSchemaReference {
+  switch (typeof source) {
+    case 'object': {
+      if (Array.isArray(source)) {
+        return {
+          anyOf: source.map(value => getConversionSchemaFrom(value))
+        }
+      }
+      if ('$ref' in source) {
+        return {
+          $ref: String(source.$ref)
+        }
+      }
+      if ('anyOf' in source) {
+        const schema: TypeConversionSchemaUnion = {
+          anyOf: source.map(getConversionSchemaFrom)
+        }
+        initAbstractConversionSchemaFrom(schema, source)
+        return schema
+      }
+      if ('type' in source) {
+        const schema: TypeConversionSchema = {
+          type: stringToJSTypeName(String(source.type))
+        }
+        switch (source.type) {
+          case 'number': {
+            initNumericConversionSchemaFrom(schema, source, Number)
+            break
+          }
+          case 'string': {
+            initStringConversionSchemaFrom(
+              schema as TypeConversionSchema & StringSchema,
+              source
+            )
+            break
+          }
+          case 'boolean': {
+            initVariedConversionSchemaFrom(schema, source, Boolean)
+            break
+          }
+          case 'object': {
+            initObjectConversionSchemaFrom(schema as ObjectCreationSchema, source)
+            break
+          }
+          case 'array': {
+            initArrayConversionSchemaFrom(schema as ArrayCreationSchema, source)
+            break
+          }
+          case 'function': {
+            initFunctionConversionSchemaFrom(schema as FunctionCreationSchema, source)
+            break
+          }
+          case 'bigint': {
+            initNumericConversionSchemaFrom(schema, source, getBigIntFrom)
+            break
+          }
+          case 'symbol': {
+            initSymbolConversionSchemaFrom(
+              schema as TypeConversionSchema & SymbolSchema,
+              source
+            )
+            break
+          }
+          default: {
+            initAbstractConversionSchemaFrom(schema, source)
+          }
+        }
+        return schema
+      }
+      break
+    }
+    case 'string': {
+      const type = stringToJSTypeName(source)
+      return { type }
+    }
+  }
+  return { type: 'any' }
+}
+
+/**
+ * Copies properties common to all types of conversion schemas from a source object.
+ * @function
+ * @param {AbstractTypeConversionSchema} schema - conversion schema to be modified
+ * @param {Record<string, any>} source - values to be copied
+ */
+export function initAbstractConversionSchemaFrom (
+  schema: AbstractTypeConversionSchema,
+  source: Record<string, any>
+): void {
+  if (source.$comment != null) schema.$comment = String(source.$comment)
+  if (source.$id != null) schema.$id = String(source.$id)
+  if (source.$schema != null) schema.$schema = String(source.$schema)
+  if (source.$anchor != null) schema.$anchor = String(source.$anchor)
+  if (source.description != null) schema.description = String(source.description)
+  if (source.title != null) schema.title = String(source.title)
+  if (typeof source.$defs === 'object' &&
+    source.$defs != null &&
+    !Array.isArray(source.$defs)
+  ) {
+    schema.$defs = getTypedValueRecord(
+      source.$defs,
+      item => {
+        const subschema = getConversionSchemaFrom(item)
+        return subschema == null || '$ref' in subschema ? undefined : subschema
+      }
+    )
+  }
+}
+
+/**
+ * Copies properties for multi-value conversion schemas from a source object.
+ * @function
+ * @template T
+ * @param {TypeConversionSchema & VariedJSTypeSchema<T>} schema - conversion schema to be modified
+ * @param {Record<string, any>} source - values to be copied
+ * @param {(value: any) => T}
+ */
+export function initVariedConversionSchemaFrom<T> (
+  schema: TypeConversionSchema & VariedJSTypeSchema<T>,
+  source: Record<string, any>,
+  convert: (value: any) => T
+): void {
+  initAbstractConversionSchemaFrom(schema, source)
+  if (source.default != null) schema.default = convert(source.default)
+  if (source.const != null) schema.const = convert(source.const)
+  if (Array.isArray(source.examples)) {
+    schema.examples = getTypedArray(
+      source.examples,
+      item => item != null ? convert(item) : undefined
+    )
+  }
+}
+
+/**
+ * Copies properties for numeric conversion schemas from a source object.
+ * @function
+ * @template T
+ * @param {TypeConversionSchema & NumericJSTypeSchema<T>} schema - conversion schema to be modified
+ * @param {Record<string, any>} source - values to be copied
+ * @param {(value: any) => T}
+ */
+export function initNumericConversionSchemaFrom<T> (
+  schema: TypeConversionSchema & NumericJSTypeSchema<T>,
+  source: Record<string, any>,
+  convert: (value: any) => T
+): void {
+  initVariedConversionSchemaFrom(schema, source, convert)
+  if (source.integer != null) schema.integer = Boolean(source.integer)
+  if (source.minimum != null) schema.minimum = convert(source.minimum)
+  if (source.maximum != null) schema.maximum = convert(source.maximum)
+  if (source.exclusiveMinimum != null) schema.exclusiveMinimum = convert(source.exclusiveMinimum)
+  if (source.exclusiveMaximum != null) schema.exclusiveMaximum = convert(source.exclusiveMaximum)
+  if (source.multipleOf != null) schema.multipleOf = convert(source.multiple)
+}
+
+/**
+ * Copies properties for array conversion schemas from a source object.
+ * @function
+ * @param {ArrayCreationSchema} schema - conversion schema to be modified
+ * @param {Record<string, any>} source - values to be copied
+ */
+export function initArrayConversionSchemaFrom (
+  schema: ArrayCreationSchema,
+  source: Record<string, any>
+): void {
+  initVariedConversionSchemaFrom(schema, source, getArrayFrom)
+  if (source.additionalItems != null) {
+    schema.additionalItems = getConversionSchemaFrom(source.additionalItems)
+  }
+  if (source.contains != null) {
+    schema.contains = getConversionSchemaFrom(source.contains)
+  }
+  if (source.items != null) {
+    schema.items = getConversionSchemaFrom(source.items)
+  }
+  if (source.prefixItems != null) {
+    schema.prefixItems = getTypedArray(
+      source.prefixItems,
+      getConversionSchemaFrom
+    )
+  }
+  if (source.minItems != null) schema.minItems = Number(source.minItems)
+  if (source.maxItems != null) schema.maxItems = Number(source.maxItems)
+  if (source.uniqueItems != null) schema.uniqueItems = Boolean(source.uniqueItems)
+}
+
+/**
+ * Copies properties for function conversion schemas from a source object.
+ * @function
+ * @param {FunctionCreationSchema} schema - conversion schema to be modified
+ * @param {Record<string, any>} source - values to be copied
+ */
+export function initFunctionConversionSchemaFrom (
+  schema: FunctionCreationSchema,
+  source: Record<string, any>
+): void {
+  initVariedConversionSchemaFrom(schema, source, getFunctionFrom)
+  if (source.parameters != null) {
+    schema.parameters = getTypedArray(
+      source.parameters,
+      getConversionSchemaFrom
+    )
+  }
+  if (source.optionalParameters != null) {
+    schema.optionalParameters = getTypedArray(
+      source.optionalParameters,
+      getConversionSchemaFrom
+    )
+  }
+  if (source.additionalParameters != null) {
+    schema.additionalParameters = getConversionSchemaFrom(source.additionalParameters)
+  }
+  if (source.returns != null) {
+    schema.returns = getConversionSchemaFrom(source.returns)
+  }
+}
+
+/**
+ * Copies properties for object conversion schemas from a source object.
+ * @function
+ * @param {ObjectCreationSchema} schema - conversion schema to be modified
+ * @param {Record<string, any>} source - values to be copied
+ */
+export function initObjectConversionSchemaFrom (
+  schema: ObjectCreationSchema,
+  source: Record<string, any>
+): void {
+  initVariedConversionSchemaFrom(schema, source, getObjectFrom)
+  if (source.additionalProperties != null) {
+    schema.additionalProperties = getConversionSchemaFrom(source.additionalProperties)
+  }
+  if (source.maxProperties != null) schema.maxProperties = Number(source.maxProperties)
+  if (source.minProperties != null) schema.minProperties = Number(source.minProperties)
+  if (source.patternProperties != null) {
+    schema.patternProperties = getTypedValueRecord(
+      source.patternProperties,
+      getConversionSchemaFrom
+    )
+  }
+  if (source.properties != null) {
+    schema.properties = getTypedValueRecord(
+      source.properties,
+      getConversionSchemaFrom
+    )
+  }
+  if (source.propertyNames != null) {
+    schema.propertyNames = { type: JSTypeName.STRING }
+    initStringConversionSchemaFrom(schema.propertyNames, source.propertyNames)
+  }
+  if (source.required != null) {
+    schema.required = getTypedArray(source.required, String)
+  }
+}
+
+/**
+ * Copies properties for string conversion schemas from a source object.
+ * @function
+ * @param {TypeConversionSchema & StringSchem} schema - conversion schema to be modified
+ * @param {Record<string, any>} source - values to be copied
+ */
+export function initStringConversionSchemaFrom (
+  schema: TypeConversionSchema & StringSchema,
+  source: Record<string, any>
+): void {
+  initVariedConversionSchemaFrom(schema, source, String)
+  if (source.contentEncoding != null) {
+    const encoding = getValueKey(
+      JSONSchemaContentEncoding,
+      source.contentEncoding
+    )
+    if (encoding != null) {
+      schema.contentEncoding = encoding as JSONSchemaContentEncoding
+    }
+  }
+  if (source.contentMediaType != null) schema.contentMediaType = String(source.contentMediaType)
+  if (source.format != null) schema.format = String(source.format)
+  if (source.maxLength != null) schema.maxLength = Number(source.maxLength)
+  if (source.minLength != null) schema.minLength = Number(source.minLength)
+  if (source.pattern != null) schema.pattern = String(source.pattern)
+}
+
+/**
+ * Copies properties for symbol conversion schemas from a source object.
+ * @function
+ * @param {TypeConversionSchema & SymbolSchema} schema - conversion schema to be modified
+ * @param {Record<string, any>} source - values to be copied
+ */
+export function initSymbolConversionSchemaFrom (
+  schema: TypeConversionSchema & SymbolSchema,
+  source: Record<string, any>
+): void {
+  initVariedConversionSchemaFrom(schema, source, getSymbolFrom)
+  if (source.key != null) schema.key = String(source.key)
+}
+
+/**
+ * Retrives the first key that corresponds to a particular value within a given collection.
+ * @function
+ * @param {Record<string, any>} collection - value map to be evaluated
+ * @param {any} value = value to be searched for
+ * @returns {string | undefined} first matching key
+ */
+export function getValueKey (
+  collection: Record<string, any>,
+  value: any
+): string | undefined {
+  for (const key in collection) {
+    if (collection[key] === value) {
+      return key
+    }
+  }
+}
+
+/**
+ * Converts the provided value to an array.
+ * This involves wrapping non-array values in an array with undefined values excluded.
+ * @function
+ * @param {unknown} source - value to be converted
+ * @returns {any[]} source array or enclosing array for non-array sources
+ */
+export function getArrayFrom (source: unknown): any[] {
+  if (Array.isArray(source)) {
+    return source
+  }
+  return source !== undefined ? [source] : []
+}
+
+/**
+ * Converts the provided value to a BigInt.
+ * This involves wrapping non-array values in an array with undefined values excluded.
+ * @function
+ * @param {unknown} source - value to be converted
+ * @returns {any} source array or enclosing array for non-array sources
+ */
+export function getBigIntFrom (
+  value: any,
+  defaultValue: bigint = 0n
+): bigint {
+  switch (typeof value) {
+    case 'number':
+    case 'string':
+    case 'boolean': {
+      return BigInt(value)
+    }
+    case 'bigint': {
+      return value
+    }
+  }
+  return defaultValue
+}
+
+/**
+ * Converts the provided value to a function.
+ * If the value isn't already a function it will be wrapped in a fuction that returns that value.
+ * @function
+ * @param {any} source - value to be converted
+ * @returns {AnyFunction} resulting function
+ */
+export function getFunctionFrom (value: any): AnyFunction {
+  if (typeof value === 'function') {
+    return value
+  }
+  return () => value
+}
+
+/**
+ * Refers to any plain old javascript object.
+ * @type {Record<string, unknown>}
+ */
+export type POJObject = Record<string, unknown>
+
+/**
+ * Converts the provided value to an object.
+ * For arrays, this means remapping items to keys that match their indices.
+ * For strings, JSON parse is attempted.
+ * Any other values or a failed parse result in an empty object.
+ * @function
+ * @param {any} source - value to be converted
+ * @returns {string} resulting object
+ */
+export function getObjectFrom (source: unknown): POJObject {
+  switch (typeof source) {
+    case 'object': {
+      if (Array.isArray(source)) {
+        const map: POJObject = {}
+        for (let i = 0; i < source.length; i++) {
+          map[String(i)] = source[i]
+        }
+        return map
+      }
+      if (source != null) return source as POJObject
+      break
+    }
+    case 'string': {
+      try {
+        return JSON.parse(source)
+      } catch (error) {
+        return {}
+      }
+    }
+  }
+  return {}
+}
+
+/**
+ * Converts the provided value to a symbol.
+ * String are handled directly by the 'Symbol' function.
+ * Any other values that aren't already symbols are converted to strings
+ * before being passed to said function.
+ * @function
+ * @param {any} source - value to be converted
+ * @returns {string} resulting object
+ */
+export function getSymbolFrom (value: any): symbol {
+  switch (typeof value) {
+    case 'string': {
+      return Symbol(value)
+    }
+    case 'symbol': {
+      return value
+    }
+  }
+  const description = safeJSONStringify(value)
+  return Symbol(description)
+}
+
+/**
+ * Callback to be used as the replacer function in JSON stringify calls.
+ * @type {Function}
+ */
+export type StringifyReplacerCallback = (this: any, key: string, value: any) => any
+
+/**
+ * Provides a fallback to failed JSON stringify attempts.
+ * @function
+ * @param {any} source - value to be converted
+ * @param {StringifyReplacerCallback | Array<string | number> | null | undefined} replacer - replacer to pass in to JSON stringify.
+ * @param {number | string} space - spacing value to be used by JSON stringify
+ * @returns {string} resulting string
+ */
+export function safeJSONStringify (
+  source: any,
+  replacer?: StringifyReplacerCallback | Array<string | number> | null,
+  space?: number | string
+): string {
+  try {
+    // Redundant, but appeases typescript.
+    if (typeof replacer === 'function') {
+      return JSON.stringify(source, replacer, space)
+    }
+    return JSON.stringify(source, replacer, space)
+  } catch (error) {
+    return String(source)
   }
 }

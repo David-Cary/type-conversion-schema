@@ -1,7 +1,7 @@
 import { type TypeConversionAction, type TypedActionRequest, type TypeMarkedObject, type TypedValueConvertor, type TypeConversionResolver, type TypeConversionSchema, type TypeConversionContext } from '../schema/conversions';
 import { type JSONObject } from '../schema/JSON';
 /**
- * Retries a nested property value for a given path.
+ * Retrieves a nested property value for a given path.
  * @function
  * @param {amy} source - object the value should be drawn from
  * @param {any} path - key or array of keys to use to get the value
@@ -10,22 +10,16 @@ import { type JSONObject } from '../schema/JSON';
 export declare function getNestedValue(source: any, path: any): any;
 /**
  * Handles redirecting to a nested value for the next step of a value conversion.
+ * The path to the target value is taken from the option of the same name.
  * @class
  * @implements {TypeConversionAction}
  */
 export declare class GetValueAction implements TypeConversionAction {
     transform(value: any, options?: JSONObject): any;
 }
-export declare function getActionRequestFrom(source: any): TypedActionRequest | undefined;
-/**
- * Extracts a type convesion schema from the provided value.
- * @function
- * @param {any} source - value to draw the schema from
- * @returns {TypeConversionSchema | undefined} target schema, if any
- */
-export declare function getConversionSchemaFrom(source: any): TypeConversionSchema | undefined;
 /**
  * Applies a conversion schema to the current value before passing it on the next action.
+ * The schema to be used is passed in through the "to" option.
  * @class
  * @implements {TypeConversionAction}
  */

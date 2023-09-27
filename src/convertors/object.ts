@@ -2,7 +2,9 @@ import {
   type TypeConversionAction,
   type TypeConversionResolver,
   type TypeConversionSchema,
-  type TypeConversionContext
+  type TypeConversionContext,
+  type POJObject,
+  getObjectFrom
 } from '../schema/conversions'
 import { type JSONObject } from '../schema/JSON'
 import {
@@ -12,45 +14,6 @@ import {
   DEFAULT_UNTYPED_CONVERSIONS
 } from './actions'
 import { cloneJSON } from '../schema/JSON'
-
-/**
- * Refers to any plain old javascript object.
- * @type {Record<string, unknown>}
- */
-export type POJObject = Record<string, unknown>
-
-/**
- * Converts the provided value to an object.
- * For arrays, this means remapping items to keys that match their indices.
- * For strings, JSON parse is attempted.
- * Any other values or a failed parse result in an empty object.
- * @function
- * @param {any} source - value to be converted
- * @returns {string} resulting object
- */
-export function getObjectFrom (source: unknown): POJObject {
-  switch (typeof source) {
-    case 'object': {
-      if (Array.isArray(source)) {
-        const map: POJObject = {}
-        for (let i = 0; i < source.length; i++) {
-          map[String(i)] = source[i]
-        }
-        return map
-      }
-      if (source != null) return source as POJObject
-      break
-    }
-    case 'string': {
-      try {
-        return JSON.parse(source)
-      } catch (error) {
-        return {}
-      }
-    }
-  }
-  return {}
-}
 
 /**
  * Wraps the provided value in an object.
