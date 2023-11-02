@@ -1,4 +1,4 @@
-import { type JSTypeSchema, type AbstractJSTypeSchema, VariedJSTypeSchema, NumericJSTypeSchema, type AnySchema, type ArraySchema, type BigIntSchema, type BooleanSchema, type FunctionSchema, type NumberSchema, type NullSchema, type ObjectSchema, type StringSchema, type SymbolSchema, type UndefinedSchema, type JSTypeSchemaReference, AnyFunction, JSTypeName } from './JSType';
+import { type JSTypeSchema, type AbstractJSTypeSchema, type VariedJSTypeSchema, type NumericJSTypeSchema, type AnySchema, type ArraySchema, type BigIntSchema, type BooleanSchema, type FunctionSchema, type NumberSchema, type NullSchema, type ObjectSchema, type StringSchema, type SymbolSchema, type UndefinedSchema, type JSTypeSchemaReference, type AnyFunction, JSTypeName } from './JSType';
 import { type JSONObject } from './JSON';
 /**
  * Any object that uses a 'type' string to identify them.
@@ -70,7 +70,7 @@ export type TypeConversionSchema = (((AnySchema | BigIntSchema | BooleanSchema |
  * @interface
  */
 export interface TypeConversionSchemaUnion extends AbstractTypeConversionSchema {
-    anyOf: Array<TypeConversionRequest>;
+    anyOf: TypeConversionRequest[];
 }
 /**
  * All data types that can be used to determine how a data type conversion should be handled.
@@ -245,14 +245,73 @@ export declare class TypeConversionResolver {
  * @returns {TypeConversionSchema | undefined} target schema, if any
  */
 export declare function getConversionSchemaFrom(source: any): TypeConversionSchema | TypeConversionSchemaUnion | JSTypeSchemaReference;
+/**
+ * Copies properties common to all types of conversion schemas from a source object.
+ * @function
+ * @param {AbstractTypeConversionSchema} schema - conversion schema to be modified
+ * @param {Record<string, any>} source - values to be copied
+ */
 export declare function initAbstractConversionSchemaFrom(schema: AbstractTypeConversionSchema, source: Record<string, any>): void;
+/**
+ * Copies properties for multi-value conversion schemas from a source object.
+ * @function
+ * @template T
+ * @param {TypeConversionSchema & VariedJSTypeSchema<T>} schema - conversion schema to be modified
+ * @param {Record<string, any>} source - values to be copied
+ * @param {(value: any) => T}
+ */
 export declare function initVariedConversionSchemaFrom<T>(schema: TypeConversionSchema & VariedJSTypeSchema<T>, source: Record<string, any>, convert: (value: any) => T): void;
+/**
+ * Copies properties for numeric conversion schemas from a source object.
+ * @function
+ * @template T
+ * @param {TypeConversionSchema & NumericJSTypeSchema<T>} schema - conversion schema to be modified
+ * @param {Record<string, any>} source - values to be copied
+ * @param {(value: any) => T}
+ */
 export declare function initNumericConversionSchemaFrom<T>(schema: TypeConversionSchema & NumericJSTypeSchema<T>, source: Record<string, any>, convert: (value: any) => T): void;
+/**
+ * Copies properties for array conversion schemas from a source object.
+ * @function
+ * @param {ArrayCreationSchema} schema - conversion schema to be modified
+ * @param {Record<string, any>} source - values to be copied
+ */
 export declare function initArrayConversionSchemaFrom(schema: ArrayCreationSchema, source: Record<string, any>): void;
+/**
+ * Copies properties for function conversion schemas from a source object.
+ * @function
+ * @param {FunctionCreationSchema} schema - conversion schema to be modified
+ * @param {Record<string, any>} source - values to be copied
+ */
 export declare function initFunctionConversionSchemaFrom(schema: FunctionCreationSchema, source: Record<string, any>): void;
+/**
+ * Copies properties for object conversion schemas from a source object.
+ * @function
+ * @param {ObjectCreationSchema} schema - conversion schema to be modified
+ * @param {Record<string, any>} source - values to be copied
+ */
 export declare function initObjectConversionSchemaFrom(schema: ObjectCreationSchema, source: Record<string, any>): void;
+/**
+ * Copies properties for string conversion schemas from a source object.
+ * @function
+ * @param {TypeConversionSchema & StringSchem} schema - conversion schema to be modified
+ * @param {Record<string, any>} source - values to be copied
+ */
 export declare function initStringConversionSchemaFrom(schema: TypeConversionSchema & StringSchema, source: Record<string, any>): void;
+/**
+ * Copies properties for symbol conversion schemas from a source object.
+ * @function
+ * @param {TypeConversionSchema & SymbolSchema} schema - conversion schema to be modified
+ * @param {Record<string, any>} source - values to be copied
+ */
 export declare function initSymbolConversionSchemaFrom(schema: TypeConversionSchema & SymbolSchema, source: Record<string, any>): void;
+/**
+ * Retrives the first key that corresponds to a particular value within a given collection.
+ * @function
+ * @param {Record<string, any>} collection - value map to be evaluated
+ * @param {any} value = value to be searched for
+ * @returns {string | undefined} first matching key
+ */
 export declare function getValueKey(collection: Record<string, any>, value: any): string | undefined;
 /**
  * Converts the provided value to an array.
@@ -293,6 +352,15 @@ export type POJObject = Record<string, unknown>;
  * @returns {string} resulting object
  */
 export declare function getObjectFrom(source: unknown): POJObject;
+/**
+ * Converts the provided value to a symbol.
+ * String are handled directly by the 'Symbol' function.
+ * Any other values that aren't already symbols are converted to strings
+ * before being passed to said function.
+ * @function
+ * @param {any} source - value to be converted
+ * @returns {string} resulting object
+ */
 export declare function getSymbolFrom(value: any): symbol;
 /**
  * Callback to be used as the replacer function in JSON stringify calls.
@@ -308,3 +376,8 @@ export type StringifyReplacerCallback = (this: any, key: string, value: any) => 
  * @returns {string} resulting string
  */
 export declare function safeJSONStringify(source: any, replacer?: StringifyReplacerCallback | Array<string | number> | null, space?: number | string): string;
+export declare class InterfaceEnforcer<T extends object> {
+    readonly schema: ObjectCreationSchema;
+    constructor(schema: ObjectCreationSchema);
+    applyTo(value: Record<string, any>, resolver: TypeConversionResolver, context?: TypeConversionContext): T;
+}

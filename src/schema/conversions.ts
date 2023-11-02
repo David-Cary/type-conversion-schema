@@ -1020,3 +1020,20 @@ export function safeJSONStringify (
     return String(source)
   }
 }
+
+export class InterfaceEnforcer<T extends object> {
+  readonly schema: ObjectCreationSchema
+
+  constructor (schema: ObjectCreationSchema) {
+    this.schema = schema
+  }
+
+  applyTo (
+    value: Record<string, any>,
+    resolver: TypeConversionResolver,
+    context?: TypeConversionContext
+  ): T {
+    const result = resolver.convert(value, this.schema, context) as T
+    return result
+  }
+}

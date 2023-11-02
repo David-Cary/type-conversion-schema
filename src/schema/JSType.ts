@@ -16,12 +16,71 @@ export interface AbstractJSTypeSchema {
 }
 
 /**
+ * Helper function used to generate schema for optional properties
+ * @function
+ * @param {JSTypeSchema} options - acceptable types other than undefined
+ * @returns {string} resulting schema
+ */
+export function getOptionalPropertySchema (
+  options: JSTypeSchema[]
+): JSTypeSchemaUnion {
+  options.push({ type: 'undefined' })
+  return {
+    anyOf: options
+  }
+}
+
+/**
+ * Helper function to get the schemas for each property of the AbstractJSTypeSchema interface.
+ * @function
+ * @returns {string} map of interface's property schemas
+ */
+export function getAbstractJSTypeProperties (): Record<string, JSTypeSchema> {
+  return {
+    $comment: getOptionalPropertySchema([{ type: 'string' }]),
+    $id: getOptionalPropertySchema([{ type: 'string' }]),
+    $defs: getOptionalPropertySchema([
+      {
+        type: 'object',
+        additionalProperties: {
+          anyOf: [
+            { $ref: 'BasicJSTypeSchema' },
+            { $ref: 'JSTypeSchemaUnion' }
+          ]
+        }
+      }
+    ]),
+    $schema: getOptionalPropertySchema([{ type: 'string' }]),
+    $anchor: getOptionalPropertySchema([{ type: 'string' }]),
+    description: getOptionalPropertySchema([{ type: 'string' }]),
+    title: getOptionalPropertySchema([{ type: 'string' }])
+  }
+}
+
+/**
  * Adds typing to a javascript type schema.
  * This should be extended by every such schema save union shemas.
  * @interface
  */
 export interface TypedJSTypeSchema extends AbstractJSTypeSchema {
   type: string
+}
+
+/**
+ * Helper function to get the schemas for each property of a particular TypedJSTypeSchema.
+ * @function
+ * @param (string) type - type name of t
+ * @returns {string} map of interface's property schemas
+ */
+export function getTypedJSTypeProperties (
+  type: string
+): Record<string, JSTypeSchema> {
+  const results = getAbstractJSTypeProperties()
+  results.type = {
+    type: 'string',
+    const: type
+  }
+  return results
 }
 
 /**
@@ -36,6 +95,27 @@ export interface VariedJSTypeSchema<T> extends TypedJSTypeSchema {
 }
 
 /**
+ * Helper function to get the schemas for each property of a particular VariedJSTypeSchema.
+ * @function
+ * @returns {string} map of interface's property schemas
+ */
+export function getVariedJSTypeProperties (
+  type: string
+): Record<string, JSTypeSchema> {
+  const results = getTypedJSTypeProperties(type)
+  const typeName = stringToJSTypeName(type)
+  results.default = getOptionalPropertySchema([{ type: typeName }])
+  results.examples = getOptionalPropertySchema([
+    {
+      type: 'array',
+      additionalItems: { type: typeName }
+    }
+  ])
+  results.const = getOptionalPropertySchema([{ type: typeName }])
+  return results
+}
+
+/**
  * Covers numeric javascript values (number and big int).
  * @interface
  */
@@ -46,6 +126,25 @@ export interface NumericJSTypeSchema<T> extends VariedJSTypeSchema<T> {
   maximum?: T
   minimum?: T
   multipleOf?: T
+}
+
+/**
+ * Helper function to get the schemas for each property of a particular NumericJSTypeSchema.
+ * @function
+ * @returns {Record<string, JSTypeSchema>} map of interface's property schemas
+ */
+export function getNumericJSTypeProperties (
+  type: string
+): Record<string, JSTypeSchema> {
+  const results = getVariedJSTypeProperties(type)
+  const typeName = stringToJSTypeName(type)
+  results.integer = getOptionalPropertySchema([{ type: 'boolean' }])
+  results.exclusiveMaximum = getOptionalPropertySchema([{ type: typeName }])
+  results.exclusiveMinimum = getOptionalPropertySchema([{ type: typeName }])
+  results.maximum = getOptionalPropertySchema([{ type: typeName }])
+  results.minimum = getOptionalPropertySchema([{ type: typeName }])
+  results.multipleOf = getOptionalPropertySchema([{ type: typeName }])
+  return results
 }
 
 /**
@@ -70,6 +169,28 @@ export interface ArraySchema<T = any> extends VariedJSTypeSchema<T[]> {
   maxItems?: number
   minItems?: number
   uniqueItems?: boolean
+}
+
+/**
+ * Helper function to get the schemas for each property of an ArraySchema.
+ * @function
+ * @returns {Record<string, JSTypeSchema>} map of interface's property schemas
+ */
+export function getArraySchemaProperties (): Record<string, JSTypeSchema> {
+  const results = getVariedJSTypeProperties('array')
+  results.additionalItems = getOptionalPropertySchema([{ $ref: 'JSTypeSchema' }])
+  results.contains = getOptionalPropertySchema([{ $ref: 'JSTypeSchema' }])
+  results.items = getOptionalPropertySchema([{ $ref: 'JSTypeSchema' }])
+  results.prefixItems = getOptionalPropertySchema([
+    {
+      type: 'array',
+      additionalItems: { $ref: 'JSTypeSchema' }
+    }
+  ])
+  results.maxItems = getOptionalPropertySchema([{ type: 'number' }])
+  results.minItems = getOptionalPropertySchema([{ type: 'number' }])
+  results.uniqueItems = getOptionalPropertySchema([{ type: 'boolean' }])
+  return results
 }
 
 /**
@@ -103,6 +224,30 @@ export interface FunctionSchema extends VariedJSTypeSchema<AnyFunction> {
 }
 
 /**
+ * Helper function to get the schemas for each property of a FunctionSchem.
+ * @function
+ * @returns {Record<string, JSTypeSchema>} map of interface's property schemas
+ */
+export function getFunctionSchemaProperties (): Record<string, JSTypeSchema> {
+  const results = getVariedJSTypeProperties('function')
+  results.parameters = getOptionalPropertySchema([
+    {
+      type: 'array',
+      additionalItems: { $ref: 'JSTypeSchema' }
+    }
+  ])
+  results.optionalParameters = getOptionalPropertySchema([
+    {
+      type: 'array',
+      additionalItems: { $ref: 'JSTypeSchema' }
+    }
+  ])
+  results.additionalParameters = getOptionalPropertySchema([{ $ref: 'JSTypeSchema' }])
+  results.returns = getOptionalPropertySchema([{ $ref: 'JSTypeSchema' }])
+  return results
+}
+
+/**
  * Adds JSON schema object properties to a javascript type schema.
  * @interface
  */
@@ -115,6 +260,38 @@ export interface ObjectSchema extends VariedJSTypeSchema<object> {
   properties?: Record<string, JSTypeSchema>
   propertyNames?: StringSchema
   required?: string[]
+}
+
+/**
+ * Helper function to get the schemas for each property of an ObjectSchema.
+ * @function
+ * @returns {Record<string, JSTypeSchema>} map of interface's property schemas
+ */
+export function getObjectSchemaProperties (): Record<string, JSTypeSchema> {
+  const results = getVariedJSTypeProperties('object')
+  results.additionalProperties = getOptionalPropertySchema([{ $ref: 'JSTypeSchema' }])
+  results.maxProperties = getOptionalPropertySchema([{ type: 'number' }])
+  results.minProperties = getOptionalPropertySchema([{ type: 'number' }])
+  results.patternProperties = getOptionalPropertySchema([
+    {
+      type: 'object',
+      additionalProperties: { $ref: 'JSTypeSchema' }
+    }
+  ])
+  results.properties = getOptionalPropertySchema([
+    {
+      type: 'object',
+      additionalProperties: { $ref: 'JSTypeSchema' }
+    }
+  ])
+  results.propertyNames = getOptionalPropertySchema([{ $ref: 'StringSchema' }])
+  results.required = getOptionalPropertySchema([
+    {
+      type: 'array',
+      additionalItems: { type: 'string' }
+    }
+  ])
+  return results
 }
 
 /**
@@ -158,12 +335,40 @@ export interface StringSchema extends VariedJSTypeSchema<string> {
 }
 
 /**
+ * Helper function to get the schemas for each property of a StringSchema.
+ * @function
+ * @returns {Record<string, JSTypeSchema>} map of interface's property schemas
+ */
+export function getStringSchemaProperties (): Record<string, JSTypeSchema> {
+  const results = getVariedJSTypeProperties('object')
+  results.contentEncoding = getEnumAsSchema(JSONSchemaContentEncoding)
+  results.contentEncoding.anyOf.push({ type: 'undefined' })
+  results.contentMediaType = getOptionalPropertySchema([{ type: 'string' }])
+  results.format = getOptionalPropertySchema([{ type: 'string' }])
+  results.maxLength = getOptionalPropertySchema([{ type: 'number' }])
+  results.minLength = getOptionalPropertySchema([{ type: 'number' }])
+  results.pattern = getOptionalPropertySchema([{ type: 'string' }])
+  return results
+}
+
+/**
  * Javascript type schema for symbols.
  * @interface
  */
 export interface SymbolSchema extends TypedJSTypeSchema {
   type: 'symbol'
   key?: string
+}
+
+/**
+ * Helper function to get the schemas for each property of a SymbolSchema.
+ * @function
+ * @returns {Record<string, JSTypeSchema>} map of interface's property schemas
+ */
+export function getSymbolSchemaProperties (): Record<string, JSTypeSchema> {
+  const results = getTypedJSTypeProperties('symbol')
+  results.key = getOptionalPropertySchema([{ type: 'string' }])
+  return results
 }
 
 /**
@@ -207,11 +412,115 @@ export type BasicJSTypeSchema = (
 )
 
 /**
+ * Converts an enum to a JS type schema,
+ * @function
+ * @returns {JSTypeSchemaUnion} resulting schema
+ */
+export function getJSTypeSchemas (
+  source: Record<string, any>
+): Record<string, ObjectSchema | JSTypeSchemaUnion> {
+  return {
+    AnySchema: {
+      type: 'object',
+      properties: getVariedJSTypeProperties('any')
+    },
+    ArraySchema: {
+      type: 'object',
+      properties: getArraySchemaProperties()
+    },
+    BigIntSchema: {
+      type: 'object',
+      properties: getNumericJSTypeProperties('bigint')
+    },
+    BooleanSchema: {
+      type: 'object',
+      properties: getVariedJSTypeProperties('boolean')
+    },
+    FunctionSchema: {
+      type: 'object',
+      properties: getFunctionSchemaProperties()
+    },
+    NumberSchema: {
+      type: 'object',
+      properties: getNumericJSTypeProperties('number')
+    },
+    NullSchema: {
+      type: 'object',
+      properties: getTypedJSTypeProperties('null')
+    },
+    ObjectSchema: {
+      type: 'object',
+      properties: getObjectSchemaProperties()
+    },
+    StringSchema: {
+      type: 'object',
+      properties: getStringSchemaProperties()
+    },
+    SymbolSchema: {
+      type: 'object',
+      properties: getSymbolSchemaProperties()
+    },
+    UndefinedSchema: {
+      type: 'object',
+      properties: getTypedJSTypeProperties('undefined')
+    },
+    JSTypeSchemaReference: {
+      type: 'object',
+      properties: {
+        $ref: { type: 'string' }
+      }
+    },
+    JSTypeSchemaUnion: {
+      type: 'object',
+      properties: getJSTypeSchemaUnionProperties()
+    },
+    BasicJSTypeSchema: {
+      anyOf: [
+        { $ref: 'AnySchema' },
+        { $ref: 'ArraySchema' },
+        { $ref: 'BigIntSchema' },
+        { $ref: 'BooleanSchema' },
+        { $ref: 'FunctionSchem' },
+        { $ref: 'NumberSchema' },
+        { $ref: 'NullSchema' },
+        { $ref: 'ObjectSchema' },
+        { $ref: 'StringSchema' },
+        { $ref: 'SymbolSchema' },
+        { $ref: 'UndefinedSchema' }
+      ]
+    },
+    JSTypeSchema: {
+      anyOf: [
+        { $ref: 'BasicJSTypeSchema' },
+        { $ref: 'JSTypeSchemaUnion' },
+        { $ref: 'JSTypeSchemaReference' }
+      ]
+    }
+  }
+}
+
+/**
  * Covers javascript type schemas with multiple valid sub-types.
  * @interface
  */
 export interface JSTypeSchemaUnion extends AbstractJSTypeSchema {
   anyOf: JSTypeSchema[]
+}
+
+/**
+ * Helper function to get the schemas for each property of a particular TypedJSTypeSchema.
+ * @function
+ * @returns {string} map of interface's property schemas
+ */
+export function getJSTypeSchemaUnionProperties (): Record<string, JSTypeSchema> {
+  const results = getAbstractJSTypeProperties()
+  results.anyOf = {
+    type: 'array',
+    additionalItems: {
+      $ref: 'JSTypeSchema'
+    }
+  }
+  return results
 }
 
 /**
@@ -231,6 +540,76 @@ export type JSTypeSchema = (
   JSTypeSchemaUnion |
   JSTypeSchemaReference
 )
+
+/**
+ * Converts a javascript value to it's corresponding schema,
+ * @function
+ * @param {any} source - value to be coverted
+ * @returns {BasicJSTypeSchema} resulting schema
+ */
+export function getValueAsSchema (
+  source: any
+): BasicJSTypeSchema {
+  const type = typeof source
+  switch (type) {
+    case 'undefined': {
+      return { type }
+    }
+    case 'object': {
+      if (source == null) {
+        return { type: 'null' }
+      }
+      return {
+        type: Array.isArray(source) ? 'array' : 'object',
+        const: source
+      }
+    }
+    case 'bigint':
+    case 'boolean':
+    case 'number':
+    case 'string':{
+      return {
+        type,
+        const: source
+      }
+    }
+    case 'function': {
+      return { type }
+    }
+    case 'symbol': {
+      const schema: SymbolSchema = { type }
+      const key = Symbol.keyFor(source)
+      if (key != null) {
+        schema.key = key
+      }
+      return schema
+    }
+    default: {
+      return {
+        type: 'any',
+        const: source
+      }
+    }
+  }
+}
+
+/**
+ * Converts an enum to a JS type schema,
+ * @function
+ * @param {Record<string, any>} source - enum to be converted
+ * @returns {JSTypeSchemaUnion} resulting schema
+ */
+export function getEnumAsSchema (
+  source: Record<string, any>
+): JSTypeSchemaUnion {
+  const schema: JSTypeSchemaUnion = { anyOf: [] }
+  for (const key in source) {
+    const option = getValueAsSchema(source[key])
+    option.title = key
+    schema.anyOf.push(option)
+  }
+  return schema
+}
 
 export const JSON_SCHEMA_TYPE_NAMES = [
   'string',

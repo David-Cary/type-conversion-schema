@@ -194,3 +194,25 @@ const results = resolver.convert(
 
 ### Custom Conversions
 If you want to use your own conversion handlers, simply change what you pass in to the resolver.  Non-literal handlers will also have an "actions" property that stores their know typed, untyped, and conversion actions.  By modifying those maps you can add extra finalization, preparation, and convertVia actions accordingly.  Typed entries will be used for 'finalize' requests, untyped entries will be used for 'prepare' requests, and conversion entries will be used for 'convertVia' requests.
+
+### Interface Enforcers
+As of 1.0.2 an 'InterfaceEnforcer' generic class has been added.  These let you convert javascript objects to a particular typescript interface using a schema provided to the constuctor, like so:
+```
+import { InterfaceEnforcer } from "type-conversion-schema"
+
+interface coordinate {
+  x: number
+  y: number
+}
+
+const enforcer = new InterfaceEnforcer<coordinate>({
+  type: 'object',
+  properties: {
+    x: { type: 'number' },
+    y: { type: 'number' }
+  }
+})
+```
+
+### Javascript Type Schema Schemas
+Version 1.0.2 also introduces the 'getJSTypeSchemas' function that creates a map of all javascript schema types as object schemas.  This is not directly used by other functions at present, but be useful when creating a schema based editor.

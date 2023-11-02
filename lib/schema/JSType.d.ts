@@ -14,6 +14,19 @@ export interface AbstractJSTypeSchema {
     title?: string;
 }
 /**
+ * Helper function used to generate schema for optional properties
+ * @function
+ * @param {JSTypeSchema} options - acceptable types other than undefined
+ * @returns {string} resulting schema
+ */
+export declare function getOptionalPropertySchema(options: JSTypeSchema[]): JSTypeSchemaUnion;
+/**
+ * Helper function to get the schemas for each property of the AbstractJSTypeSchema interface.
+ * @function
+ * @returns {string} map of interface's property schemas
+ */
+export declare function getAbstractJSTypeProperties(): Record<string, JSTypeSchema>;
+/**
  * Adds typing to a javascript type schema.
  * This should be extended by every such schema save union shemas.
  * @interface
@@ -21,6 +34,13 @@ export interface AbstractJSTypeSchema {
 export interface TypedJSTypeSchema extends AbstractJSTypeSchema {
     type: string;
 }
+/**
+ * Helper function to get the schemas for each property of a particular TypedJSTypeSchema.
+ * @function
+ * @param (string) type - type name of t
+ * @returns {string} map of interface's property schemas
+ */
+export declare function getTypedJSTypeProperties(type: string): Record<string, JSTypeSchema>;
 /**
  * This adds properties for schemas that can have multiple values.
  * As such it's used for most schemas that aren't fixed values like null and undefined.
@@ -31,6 +51,12 @@ export interface VariedJSTypeSchema<T> extends TypedJSTypeSchema {
     examples?: T[];
     const?: T;
 }
+/**
+ * Helper function to get the schemas for each property of a particular VariedJSTypeSchema.
+ * @function
+ * @returns {string} map of interface's property schemas
+ */
+export declare function getVariedJSTypeProperties(type: string): Record<string, JSTypeSchema>;
 /**
  * Covers numeric javascript values (number and big int).
  * @interface
@@ -43,6 +69,12 @@ export interface NumericJSTypeSchema<T> extends VariedJSTypeSchema<T> {
     minimum?: T;
     multipleOf?: T;
 }
+/**
+ * Helper function to get the schemas for each property of a particular NumericJSTypeSchema.
+ * @function
+ * @returns {Record<string, JSTypeSchema>} map of interface's property schemas
+ */
+export declare function getNumericJSTypeProperties(type: string): Record<string, JSTypeSchema>;
 /**
  * Acts as a wildcard for values with no typing or where the type is unknown.
  * This makes it equivalent to "true" in a JSON schema.
@@ -65,6 +97,12 @@ export interface ArraySchema<T = any> extends VariedJSTypeSchema<T[]> {
     minItems?: number;
     uniqueItems?: boolean;
 }
+/**
+ * Helper function to get the schemas for each property of an ArraySchema.
+ * @function
+ * @returns {Record<string, JSTypeSchema>} map of interface's property schemas
+ */
+export declare function getArraySchemaProperties(): Record<string, JSTypeSchema>;
 /**
  * Javascript type schema for big integers.
  * @interface
@@ -92,6 +130,12 @@ export interface FunctionSchema extends VariedJSTypeSchema<AnyFunction> {
     returns?: JSTypeSchema;
 }
 /**
+ * Helper function to get the schemas for each property of a FunctionSchem.
+ * @function
+ * @returns {Record<string, JSTypeSchema>} map of interface's property schemas
+ */
+export declare function getFunctionSchemaProperties(): Record<string, JSTypeSchema>;
+/**
  * Adds JSON schema object properties to a javascript type schema.
  * @interface
  */
@@ -105,6 +149,12 @@ export interface ObjectSchema extends VariedJSTypeSchema<object> {
     propertyNames?: StringSchema;
     required?: string[];
 }
+/**
+ * Helper function to get the schemas for each property of an ObjectSchema.
+ * @function
+ * @returns {Record<string, JSTypeSchema>} map of interface's property schemas
+ */
+export declare function getObjectSchemaProperties(): Record<string, JSTypeSchema>;
 /**
  * Javascript type schema for numbers.
  * @interface
@@ -142,6 +192,12 @@ export interface StringSchema extends VariedJSTypeSchema<string> {
     pattern?: string;
 }
 /**
+ * Helper function to get the schemas for each property of a StringSchema.
+ * @function
+ * @returns {Record<string, JSTypeSchema>} map of interface's property schemas
+ */
+export declare function getStringSchemaProperties(): Record<string, JSTypeSchema>;
+/**
  * Javascript type schema for symbols.
  * @interface
  */
@@ -149,6 +205,12 @@ export interface SymbolSchema extends TypedJSTypeSchema {
     type: 'symbol';
     key?: string;
 }
+/**
+ * Helper function to get the schemas for each property of a SymbolSchema.
+ * @function
+ * @returns {Record<string, JSTypeSchema>} map of interface's property schemas
+ */
+export declare function getSymbolSchemaProperties(): Record<string, JSTypeSchema>;
 /**
  * Javascript type schema for undefined values.
  * @interface
@@ -175,12 +237,24 @@ export declare enum JSTypeName {
  */
 export type BasicJSTypeSchema = (AnySchema | ArraySchema | BigIntSchema | BooleanSchema | FunctionSchema | NumberSchema | NullSchema | ObjectSchema | StringSchema | SymbolSchema | UndefinedSchema);
 /**
+ * Converts an enum to a JS type schema,
+ * @function
+ * @returns {JSTypeSchemaUnion} resulting schema
+ */
+export declare function getJSTypeSchemas(source: Record<string, any>): Record<string, ObjectSchema | JSTypeSchemaUnion>;
+/**
  * Covers javascript type schemas with multiple valid sub-types.
  * @interface
  */
 export interface JSTypeSchemaUnion extends AbstractJSTypeSchema {
     anyOf: JSTypeSchema[];
 }
+/**
+ * Helper function to get the schemas for each property of a particular TypedJSTypeSchema.
+ * @function
+ * @returns {string} map of interface's property schemas
+ */
+export declare function getJSTypeSchemaUnionProperties(): Record<string, JSTypeSchema>;
 /**
  * Used to implement JSON schema style references within a javascript type schema.
  * @interface
@@ -193,6 +267,20 @@ export interface JSTypeSchemaReference {
  * @type
  */
 export type JSTypeSchema = (BasicJSTypeSchema | JSTypeSchemaUnion | JSTypeSchemaReference);
+/**
+ * Converts a javascript value to it's corresponding schema,
+ * @function
+ * @param {any} source - value to be coverted
+ * @returns {BasicJSTypeSchema} resulting schema
+ */
+export declare function getValueAsSchema(source: any): BasicJSTypeSchema;
+/**
+ * Converts an enum to a JS type schema,
+ * @function
+ * @param {Record<string, any>} source - enum to be converted
+ * @returns {JSTypeSchemaUnion} resulting schema
+ */
+export declare function getEnumAsSchema(source: Record<string, any>): JSTypeSchemaUnion;
 export declare const JSON_SCHEMA_TYPE_NAMES: string[];
 /**
  * Tries to convert a javascript type schema to a JSON shema.
